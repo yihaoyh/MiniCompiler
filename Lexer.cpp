@@ -30,6 +30,10 @@ void Lexer::scan(const char* file_name)
 		{
 			parse_character(current_char);
 		}
+		else if (current_char == '/')
+		{
+			parse_comment(current_char);
+		}
 		std::cout << p_current_token_->to_string() << std::endl;
 	} while (current_char != EOF);
 }
@@ -141,6 +145,64 @@ void Lexer::parse_character(char ch)
 	}
 	else {
 		error(std::string("expected \' but").append(1, ch).c_str());
+	}
+	token_string = "";
+}
+
+void Lexer::parse_comment(char ch)
+{
+	token_string.append(1, ch);
+	ch = get_char();
+	if (ch == '/') 
+	{
+		do
+		{
+			ch = get_char();
+			token_string.append(1, ch);
+		} while (ch != '\n' && ch != EOF);
+		token_string = token_string.substr(token_string.size() - 1);
+		p_current_token_ = new Token(COMMENT, token_string);
+	}
+	else if (ch == '*')
+	{
+		int state = 0;
+		do
+		{
+			ch = get_char();
+			if (ch == EOF)
+			{
+				error("uncomplete comment");
+				break;
+			}
+			else if (ch == '*')
+			{
+				state = '*';
+				token_string.append(1, ch);
+				continue;
+			}
+			if (state == '*' && ch == '/')
+			{
+				token_string.append(1, ch);
+				break;
+			}
+			else {
+				state = 0;
+				token_string.append(1, ch);
+			}
+		} while (true);
+		//do
+		//{
+		//	ch = get_char();
+		//	token_string.append(1, ch);
+
+
+		//	
+		//} while (token_string.substr(token_string.size() - 1, token_string.size()) != "*/" && token_string.size()>=4);
+		p_current_token_ = new Token(COMMENT, token_string);
+	}
+	else
+	{
+		error("illegal comment character");
 	}
 	token_string = "";
 }

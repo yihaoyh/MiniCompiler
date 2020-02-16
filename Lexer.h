@@ -141,4 +141,5 @@ private:
 	void parse_number(char);
 	void parse_word(char);
 	void parse_character(char);
+	void parse_comment(char ch);
 };

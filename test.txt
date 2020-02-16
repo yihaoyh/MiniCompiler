@@ -1,7 +1,1 @@
-inta
-char
-99
-a10
-5b
-'\n'
-'c'
+/*asdf*bsd/fasdf*
