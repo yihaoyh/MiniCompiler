@@ -1,1 +1,3 @@
-/*asdf*bsd/fasdf*
+/*asdf*bsd/fasdf*/
+int a = 10+20;
+string b = "abc\nsdf\\";

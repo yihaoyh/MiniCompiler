@@ -120,8 +120,6 @@ public:
 		ostr << "Tag:" << get_tag_string() << " string:" << string_;
 		return std::string(ostr.str());
 	}
-
-
 };
 
 class Lexer
@@ -130,16 +128,19 @@ public:
 	Lexer();
 	void scan(const char* file_name);
 	char get_char();
+	void unget_char();
 	void reset();
 
 private:
 	Token* p_current_token_;
 	std::string file_string_;
 	unsigned int scan_pos_;
-	std::string token_string;
+	std::string token_string_;
 
 	void parse_number(char);
 	void parse_word(char);
 	void parse_character(char);
 	void parse_comment(char ch);
+	void skip_white_space();
+	void parse_string(char);
 };

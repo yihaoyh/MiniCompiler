@@ -14,11 +14,15 @@ void Lexer::scan(const char* file_name)
 		file_string_ = read_string_from_file(file_name);
 	}
 	char current_char = 0;
-	std::string token_string = "";
+	token_string_ = "";
 	do
 	{
 		current_char = get_char();
-		if (is_digit(current_char) && current_char != '0')
+		if (is_blank(current_char))
+		{
+			skip_white_space();
+		}
+		else if (is_digit(current_char) && current_char != '0')
 		{
 			parse_number(current_char);
 		}
@@ -30,11 +34,103 @@ void Lexer::scan(const char* file_name)
 		{
 			parse_character(current_char);
 		}
+		else if (current_char == '\"')
+		{
+			parse_string(current_char);
+		}
 		else if (current_char == '/')
 		{
 			parse_comment(current_char);
 		}
-		std::cout << p_current_token_->to_string() << std::endl;
+		else if (current_char == '=')
+		{
+			token_string_.append(1, current_char);
+			current_char = get_char();
+			if (current_char == '=')
+			{
+				token_string_.append(1, current_char);
+				p_current_token_ = new Token(EQUAL, token_string_);
+			}
+			else
+			{
+				unget_char();
+				p_current_token_ = new Token(ASSIGN, token_string_);
+			}
+			token_string_ = "";
+		}
+		else if (current_char == ';')
+		{
+			token_string_ = ";";
+			p_current_token_ = new Token(SEMICOLON, token_string_);
+			token_string_ = "";
+		}
+		else if (current_char == '(')
+		{
+			token_string_ = "(";
+			p_current_token_ = new Token(LPAREN, token_string_);
+			token_string_ = "";
+		}
+		else if (current_char == ')')
+		{
+			token_string_ = ")";
+			p_current_token_ = new Token(RPAREN, token_string_);
+			token_string_ = "";
+		}
+		else if (current_char == '[')
+		{
+			token_string_ = "[";
+			p_current_token_ = new Token(LBRACKET, token_string_);
+			token_string_ = "";
+		}
+		else if (current_char == ']')
+		{
+			token_string_ = "]";
+			p_current_token_ = new Token(RBRACKET, token_string_);
+			token_string_ = "";
+		}
+		else if (current_char == '{')
+		{
+			token_string_ = "{";
+			p_current_token_ = new Token(LBRACES, token_string_);
+			token_string_ = "";
+		}
+		else if (current_char == '}')
+		{
+			token_string_ = "}";
+			p_current_token_ = new Token(RBRACES, token_string_);
+			token_string_ = "";
+		}
+		else if (current_char == '+')
+		{
+			token_string_ = "+";
+			p_current_token_ = new Token(ADD, token_string_);
+			token_string_ = "";
+		}
+		else if (current_char == '-')
+		{
+			token_string_ = "-";
+			p_current_token_ = new Token(SUB, token_string_);
+			token_string_ = "";
+		}
+		else if (current_char == '*')
+		{
+			token_string_ = "*";
+			p_current_token_ = new Token(MULTIPLY, token_string_);
+			token_string_ = "";
+		}
+		else if (current_char == '/')
+		{
+			token_string_ = "/";
+			p_current_token_ = new Token(DIVIDE, token_string_);
+			token_string_ = "";
+		}
+		else if (current_char == ',')
+		{
+			token_string_ = ",";
+			p_current_token_ = new Token(COMMA, token_string_);
+			token_string_ = "";
+		}
+		std::cout << "occur token:" << p_current_token_->to_string() << std::endl;
 	} while (current_char != EOF);
 }
 
@@ -55,60 +151,55 @@ char Lexer::get_char()
 
 void Lexer::parse_number(char ch)
 {
-	token_string.append(1, ch);
+	token_string_.append(1, ch);
 	do
 	{
 		ch = get_char();
-		if (ch <= '9' && ch >= '1')
+		if (is_digit(ch))
 		{
-			token_string.append(1, ch);
-		}
-		else if (is_blank(ch)) {
-			p_current_token_ = new Token(LT_NUMBER, token_string);
-			break;
+			token_string_.append(1, ch);
 		}
 		else
 		{
-			error(std::string("expected num character but:").append(1, ch).c_str());
+			unget_char();
+			p_current_token_ = new Token(LT_NUMBER, token_string_);
+			break;
 		}
 	} while (ch != EOF);
-	token_string = "";
+	token_string_ = "";
 }
 
 void Lexer::parse_word(char ch)
 {
-	token_string.append(1, ch);
+	token_string_.append(1, ch);
 	do
 	{
 		ch = get_char();
 		if (is_alphabet(ch) || is_digit(ch) || ch == '_')
 		{
-			token_string.append(1, ch);
-		}
-		else if (is_blank(ch))
-		{
-			Tag tag;
-			if ((tag = get_keyword_tag(token_string)) != UNKNOWN)
-			{
-				p_current_token_ = new Token(tag, token_string);
-			}
-			else
-			{
-				p_current_token_ = new Token(IDENTIFIER, token_string);
-			}
-			break;
+			token_string_.append(1, ch);
 		}
 		else
 		{
-			error(std::string("expected alphabet or number or \'_\' but:").append(1, ch).c_str());
+			unget_char();
+			Tag tag;
+			if ((tag = get_keyword_tag(token_string_)) != UNKNOWN)
+			{
+				p_current_token_ = new Token(tag, token_string_);
+			}
+			else
+			{
+				p_current_token_ = new Token(IDENTIFIER, token_string_);
+			}
+			break;
 		}
 	} while (ch != EOF);
-	token_string = "";
+	token_string_ = "";
 }
 
 void Lexer::parse_character(char ch)
 {
-	token_string.append(1, ch);
+	token_string_.append(1, ch);
 	ch = get_char();
 	if (ch == '\\')
 	{
@@ -126,42 +217,44 @@ void Lexer::parse_character(char ch)
 		case '\'':
 		case '\?':
 		case '\0':
-			token_string.append(1, ch);
+		case '\"':
+			token_string_.append(1, ch);
 			break;
 		default:
 			error(std::string("illegal character after \\").append(1, ch).c_str());
 			break;
 		}
 	}
-	else 
+	else
 	{
-		token_string.append(1, ch);
+		token_string_.append(1, ch);
 	}
 	ch = get_char();
-	if (ch == '\'') 
+	if (ch == '\'')
 	{
-		token_string.append(1, ch);
-		p_current_token_ = new Token(LT_CHAR, token_string);
+		token_string_.append(1, ch);
+		p_current_token_ = new Token(LT_CHAR, token_string_);
 	}
-	else {
+	else
+	{
 		error(std::string("expected \' but").append(1, ch).c_str());
 	}
-	token_string = "";
+	token_string_ = "";
 }
 
 void Lexer::parse_comment(char ch)
 {
-	token_string.append(1, ch);
+	token_string_.append(1, ch);
 	ch = get_char();
-	if (ch == '/') 
+	if (ch == '/')
 	{
 		do
 		{
 			ch = get_char();
-			token_string.append(1, ch);
+			token_string_.append(1, ch);
 		} while (ch != '\n' && ch != EOF);
-		token_string = token_string.substr(token_string.size() - 1);
-		p_current_token_ = new Token(COMMENT, token_string);
+		token_string_ = token_string_.substr(token_string_.size() - 1);
+		p_current_token_ = new Token(COMMENT, token_string_);
 	}
 	else if (ch == '*')
 	{
@@ -177,32 +270,92 @@ void Lexer::parse_comment(char ch)
 			else if (ch == '*')
 			{
 				state = '*';
-				token_string.append(1, ch);
+				token_string_.append(1, ch);
 				continue;
 			}
 			if (state == '*' && ch == '/')
 			{
-				token_string.append(1, ch);
+				token_string_.append(1, ch);
 				break;
 			}
 			else {
 				state = 0;
-				token_string.append(1, ch);
+				token_string_.append(1, ch);
 			}
 		} while (true);
-		//do
-		//{
-		//	ch = get_char();
-		//	token_string.append(1, ch);
-
-
-		//	
-		//} while (token_string.substr(token_string.size() - 1, token_string.size()) != "*/" && token_string.size()>=4);
-		p_current_token_ = new Token(COMMENT, token_string);
+		p_current_token_ = new Token(COMMENT, token_string_);
 	}
 	else
 	{
 		error("illegal comment character");
 	}
-	token_string = "";
+	token_string_ = "";
+}
+
+void Lexer::skip_white_space()
+{
+	char ch = ' ';
+	do
+	{
+		ch = get_char();
+	} while (is_blank(ch) && ch != EOF);
+	if (ch != EOF)
+	{
+		unget_char();
+	}
+}
+
+void Lexer::unget_char()
+{
+	if (scan_pos_ > 0)
+	{
+		scan_pos_--;
+	}
+}
+
+void Lexer::parse_string(char ch)
+{
+	token_string_.append(1, ch);
+	int STATE_NORMAL = 0;
+	int STATE_ESCAPE = 1;
+	int state = STATE_NORMAL;
+	do
+	{
+		ch = get_char();
+		token_string_.append(1, ch);
+		if (state == STATE_NORMAL)
+		{
+			if (ch == '\"')
+			{
+				p_current_token_ = new Token(LT_STRING, token_string_);
+				break;
+			}
+			else if (ch == '\\')
+			{
+				state = STATE_ESCAPE;
+			}
+		}
+		else if (state == STATE_ESCAPE)
+		{
+			switch (ch)
+			{
+			case 'a':
+			case 'b':
+			case 'f':
+			case 'n':
+			case 'r':
+			case 't':
+			case 'v':
+			case '\\':
+			case '\'':
+			case '\"':
+			case '\?':
+			case '\0':
+				state = STATE_NORMAL;
+				continue;
+			default:
+				error(std::string("illegal character after \\").append(1, ch).c_str());
+			}
+		}
+	} while (true);
 }
