@@ -6,13 +6,16 @@
 #include"Utils.h"
 #include"Lexer.h"
 #include"Common.h"
+#include"Parser.h"
 extern std::map<std::string, Tag> keyword_table;
 
 int main()
 {
 	init_keyword_table();
-	Lexer lexer;
-	lexer.scan("test.txt");
+	//Lexer lexer;
+	//lexer.scan("test.txt");
+	Parser parser;
+	parser.begin_parse();
 }
 
 void init()

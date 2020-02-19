@@ -13,131 +13,158 @@ void Lexer::scan(const char* file_name)
 	{
 		file_string_ = read_string_from_file(file_name);
 	}
-	char current_char = 0;
 	token_string_ = "";
 	do
 	{
-		current_char = get_char();
-		if (is_blank(current_char))
-		{
-			skip_white_space();
-		}
-		else if (is_digit(current_char) && current_char != '0')
-		{
-			parse_number(current_char);
-		}
-		else if (is_alphabet(current_char))
-		{
-			parse_word(current_char);
-		}
-		else if (current_char == '\'')
-		{
-			parse_character(current_char);
-		}
-		else if (current_char == '\"')
-		{
-			parse_string(current_char);
-		}
-		else if (current_char == '/')
-		{
-			parse_comment(current_char);
-		}
-		else if (current_char == '=')
-		{
-			token_string_.append(1, current_char);
-			current_char = get_char();
-			if (current_char == '=')
-			{
-				token_string_.append(1, current_char);
-				p_current_token_ = new Token(EQUAL, token_string_);
-			}
-			else
-			{
-				unget_char();
-				p_current_token_ = new Token(ASSIGN, token_string_);
-			}
-			token_string_ = "";
-		}
-		else if (current_char == ';')
-		{
-			token_string_ = ";";
-			p_current_token_ = new Token(SEMICOLON, token_string_);
-			token_string_ = "";
-		}
-		else if (current_char == '(')
-		{
-			token_string_ = "(";
-			p_current_token_ = new Token(LPAREN, token_string_);
-			token_string_ = "";
-		}
-		else if (current_char == ')')
-		{
-			token_string_ = ")";
-			p_current_token_ = new Token(RPAREN, token_string_);
-			token_string_ = "";
-		}
-		else if (current_char == '[')
-		{
-			token_string_ = "[";
-			p_current_token_ = new Token(LBRACKET, token_string_);
-			token_string_ = "";
-		}
-		else if (current_char == ']')
-		{
-			token_string_ = "]";
-			p_current_token_ = new Token(RBRACKET, token_string_);
-			token_string_ = "";
-		}
-		else if (current_char == '{')
-		{
-			token_string_ = "{";
-			p_current_token_ = new Token(LBRACES, token_string_);
-			token_string_ = "";
-		}
-		else if (current_char == '}')
-		{
-			token_string_ = "}";
-			p_current_token_ = new Token(RBRACES, token_string_);
-			token_string_ = "";
-		}
-		else if (current_char == '+')
-		{
-			token_string_ = "+";
-			p_current_token_ = new Token(ADD, token_string_);
-			token_string_ = "";
-		}
-		else if (current_char == '-')
-		{
-			token_string_ = "-";
-			p_current_token_ = new Token(SUB, token_string_);
-			token_string_ = "";
-		}
-		else if (current_char == '*')
-		{
-			token_string_ = "*";
-			p_current_token_ = new Token(MULTIPLY, token_string_);
-			token_string_ = "";
-		}
-		else if (current_char == '/')
-		{
-			token_string_ = "/";
-			p_current_token_ = new Token(DIVIDE, token_string_);
-			token_string_ = "";
-		}
-		else if (current_char == ',')
-		{
-			token_string_ = ",";
-			p_current_token_ = new Token(COMMA, token_string_);
-			token_string_ = "";
-		}
-		std::cout << "occur token:" << p_current_token_->to_string() << std::endl;
-	} while (current_char != EOF);
+		tokenize();
+	} while (pcurrent_token_->tag()!=END_OF_FILE);
 }
 
 void Lexer::reset()
 {
 	file_string_ = "";
 	scan_pos_ = 0;
+}
+
+void Lexer::load_file(const char* file_name)
+{
+	if (file_name != nullptr)
+	{
+		file_string_ = read_string_from_file(file_name);
+	}
+}
+
+Token Lexer::tokenize()
+{
+	char current_char = get_char();
+	if (is_blank(current_char))
+	{
+		skip_white_space();
+		current_char = get_char();
+	}
+	if (is_digit(current_char) && current_char != '0')
+	{
+		parse_number(current_char);
+	}
+	else if (is_alphabet(current_char))
+	{
+		parse_word(current_char);
+	}
+	else if (current_char == '\'')
+	{
+		parse_character(current_char);
+	}
+	else if (current_char == '\"')
+	{
+		parse_string(current_char);
+	}
+	else if (current_char == '/')
+	{
+		parse_comment(current_char);
+	}
+	else if (current_char == '=')
+	{
+		token_string_.append(1, current_char);
+		current_char = get_char();
+		if (current_char == '=')
+		{
+			token_string_.append(1, current_char);
+			pcurrent_token_ = new Token(EQUAL, token_string_);
+		}
+		else
+		{
+			unget_char();
+			pcurrent_token_ = new Token(ASSIGN, token_string_);
+		}
+		token_string_ = "";
+	}
+	else if (current_char == ';')
+	{
+		token_string_ = ";";
+		pcurrent_token_ = new Token(SEMICOLON, token_string_);
+		token_string_ = "";
+	}
+	else if (current_char == '(')
+	{
+		token_string_ = "(";
+		pcurrent_token_ = new Token(LPAREN, token_string_);
+		token_string_ = "";
+	}
+	else if (current_char == ')')
+	{
+		token_string_ = ")";
+		pcurrent_token_ = new Token(RPAREN, token_string_);
+		token_string_ = "";
+	}
+	else if (current_char == '[')
+	{
+		token_string_ = "[";
+		pcurrent_token_ = new Token(LBRACKET, token_string_);
+		token_string_ = "";
+	}
+	else if (current_char == ']')
+	{
+		token_string_ = "]";
+		pcurrent_token_ = new Token(RBRACKET, token_string_);
+		token_string_ = "";
+	}
+	else if (current_char == '{')
+	{
+		token_string_ = "{";
+		pcurrent_token_ = new Token(LBRACES, token_string_);
+		token_string_ = "";
+	}
+	else if (current_char == '}')
+	{
+		token_string_ = "}";
+		pcurrent_token_ = new Token(RBRACES, token_string_);
+		token_string_ = "";
+	}
+	else if (current_char == '+')
+	{
+		token_string_ = "+";
+		pcurrent_token_ = new Token(ADD, token_string_);
+		token_string_ = "";
+	}
+	else if (current_char == '-')
+	{
+		token_string_ = "-";
+		pcurrent_token_ = new Token(SUB, token_string_);
+		token_string_ = "";
+	}
+	else if (current_char == '*')
+	{
+		token_string_ = "*";
+		pcurrent_token_ = new Token(MULTIPLY, token_string_);
+		token_string_ = "";
+	}
+	else if (current_char == '/')
+	{
+		token_string_ = "/";
+		pcurrent_token_ = new Token(DIVIDE, token_string_);
+		token_string_ = "";
+	}
+	else if (current_char == ',')
+	{
+		token_string_ = ",";
+		pcurrent_token_ = new Token(COMMA, token_string_);
+		token_string_ = "";
+	}
+	else if (current_char == EOF)
+	{
+		token_string_ = "end of file";
+		pcurrent_token_ = new Token(END_OF_FILE, token_string_);
+		token_string_ = "";
+	}
+	if (pcurrent_token_ != nullptr)
+	{
+		std::cout << "occur token:" << pcurrent_token_->to_string() << std::endl;
+		return *pcurrent_token_;
+	}
+	else
+	{
+		return Token(UNKNOWN, "");
+	}
 }
 
 char Lexer::get_char()
@@ -162,7 +189,7 @@ void Lexer::parse_number(char ch)
 		else
 		{
 			unget_char();
-			p_current_token_ = new Token(LT_NUMBER, token_string_);
+			pcurrent_token_ = new Token(LT_NUMBER, token_string_);
 			break;
 		}
 	} while (ch != EOF);
@@ -185,11 +212,11 @@ void Lexer::parse_word(char ch)
 			Tag tag;
 			if ((tag = get_keyword_tag(token_string_)) != UNKNOWN)
 			{
-				p_current_token_ = new Token(tag, token_string_);
+				pcurrent_token_ = new Token(tag, token_string_);
 			}
 			else
 			{
-				p_current_token_ = new Token(IDENTIFIER, token_string_);
+				pcurrent_token_ = new Token(IDENTIFIER, token_string_);
 			}
 			break;
 		}
@@ -233,7 +260,7 @@ void Lexer::parse_character(char ch)
 	if (ch == '\'')
 	{
 		token_string_.append(1, ch);
-		p_current_token_ = new Token(LT_CHAR, token_string_);
+		pcurrent_token_ = new Token(LT_CHAR, token_string_);
 	}
 	else
 	{
@@ -254,7 +281,7 @@ void Lexer::parse_comment(char ch)
 			token_string_.append(1, ch);
 		} while (ch != '\n' && ch != EOF);
 		token_string_ = token_string_.substr(token_string_.size() - 1);
-		p_current_token_ = new Token(COMMENT, token_string_);
+		pcurrent_token_ = new Token(COMMENT, token_string_);
 	}
 	else if (ch == '*')
 	{
@@ -283,7 +310,7 @@ void Lexer::parse_comment(char ch)
 				token_string_.append(1, ch);
 			}
 		} while (true);
-		p_current_token_ = new Token(COMMENT, token_string_);
+		pcurrent_token_ = new Token(COMMENT, token_string_);
 	}
 	else
 	{
@@ -327,7 +354,7 @@ void Lexer::parse_string(char ch)
 		{
 			if (ch == '\"')
 			{
-				p_current_token_ = new Token(LT_STRING, token_string_);
+				pcurrent_token_ = new Token(LT_STRING, token_string_);
 				break;
 			}
 			else if (ch == '\\')

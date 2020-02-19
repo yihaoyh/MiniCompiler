@@ -106,6 +106,12 @@ private:
 		}
 	}
 public:
+	Token()
+	{
+		tag_ = UNKNOWN;
+		string_ = "";
+	}
+
 	Token(Tag tag, std::string str) :tag_{ tag }, string_{str}
 	{
 	}
@@ -113,6 +119,12 @@ public:
 	{
 		return tag_;
 	}
+
+	std::string get_name()
+	{
+		return string_;
+	}
+
 	virtual ~Token() {}
 	virtual std::string to_string()
 	{
@@ -130,9 +142,11 @@ public:
 	char get_char();
 	void unget_char();
 	void reset();
+	void load_file(const char* file_name);
+	Token tokenize();
 
 private:
-	Token* p_current_token_;
+	Token* pcurrent_token_;
 	std::string file_string_;
 	unsigned int scan_pos_;
 	std::string token_string_;

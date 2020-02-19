@@ -1,0 +1,20 @@
+
+int a = 10;
+/*
+int f()
+{
+	int b = 20;
+	return b;
+}
+
+void main()
+{
+	string c;
+	int a = 10;
+	a = a * f();
+	if(a == 1)
+	{
+		;
+	}
+}
+*/
