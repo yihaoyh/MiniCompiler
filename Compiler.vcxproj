@@ -151,14 +151,18 @@
     <ClCompile Include="Compiler.cpp" />
     <ClCompile Include="Lexer.cpp" />
     <ClCompile Include="Parser.cpp" />
+    <ClCompile Include="SymTable.cpp" />
     <ClCompile Include="Utils.cpp" />
+    <ClCompile Include="Var.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Common.h" />
     <ClInclude Include="Lexer.h" />
     <ClInclude Include="Parser.h" />
     <ClInclude Include="resource.h" />
+    <ClInclude Include="SymTable.h" />
     <ClInclude Include="Utils.h" />
+    <ClInclude Include="Var.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="parser_test.txt" />

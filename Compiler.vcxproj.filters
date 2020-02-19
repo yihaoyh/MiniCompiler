@@ -30,6 +30,12 @@
     <ClCompile Include="Parser.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="Var.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="SymTable.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Lexer.h">
@@ -45,6 +51,12 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="resource.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Var.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="SymTable.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

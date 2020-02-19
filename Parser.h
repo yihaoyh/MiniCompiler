@@ -3,6 +3,8 @@
 */
 #pragma once
 #include"Lexer.h"
+#include"Var.h"
+#include"SymTable.h"
 class Parser
 {
 public:
@@ -11,6 +13,7 @@ public:
 private:
 	Token token_look_;
 	Lexer lexer_;
+	SymTable sym_table_;
 
 	/* 
 		分析整个程序 <program>-><segment> <program> | ε
@@ -33,20 +36,20 @@ private:
 		<def>->ID <idtail>
 	*/
 	void def(Tag);
+
 	/*
 		<idtail>-><varrdef> <deflist> | LPAREN <para> RPAREN <funtail>
 	*/
-
-	void idtail(Tag, std::string);
+	Var idtail(Tag, std::string);
 	/*
 		<varrdef>-><init>    
 	*/
-	void varrdef();
+	Var varrdef();
 	
 	/*
 		<init>-> ASSIGN <expr> | ε
 	*/
-	void init();
+	Var init();
 
 	/*
 		<deflist>->COMMA <defdata> <deflist> | SEMICOLON
@@ -88,11 +91,11 @@ private:
 	/*
 		<expr>-><item> <exprtail>
 	*/
-	void expr();
+	Var expr();
 	/*
 		<exprtail>-><op_low> <item> <exprtail> | SEMICOLON
 	*/
-	void exprtail();
+	Var exprtail(Var);
 	/*
 		<operator>
 	*/
@@ -110,11 +113,11 @@ private:
 	/*
 		<item>-><factor> <itemtail>
 	*/
-	void item();
+	Var item();
 	/*
 		<itemtail>-><op_high> <factor> <itemtail> | ε
 	*/
-	void itemtail();
+	Var itemtail(Var);
 	/*
 		<op_high>->* | /
 	*/
@@ -122,19 +125,19 @@ private:
 	/*
 		<factor>->val
 	*/
-	void factor();
+	Var factor();
 	/*
 		<val>-><elem>
 	*/
-	void val();
+	Var val();
 	/*
 		<elem>->ID | <LPAREN> <expr> <RPAREN> | <literal>
 	*/
-	void elem();
+	Var elem();
 	/*
 		<literal>->NUM | CHAR |STRING
 	*/
-	void literal();
+	Var literal();
 
 	/*
 		修复错误

@@ -48,7 +48,7 @@ Tag Parser::type()
 		return UNKNOWN;
 	}
 }
-
+// <def>->ID <idtail>
 void Parser::def(Tag tag)
 {
 	std::string name = "";
@@ -61,11 +61,15 @@ void Parser::def(Tag tag)
 	{
 		recovery();
 	}
-	idtail(tag, name);
+	Var var = idtail(tag, name);
+	var.name = name;
+	sym_table_.put_sym(var);
 }
 
-void Parser::idtail(Tag tag, std::string name)
+// <idtail>-><varrdef> <deflist> | LPAREN <para> RPAREN <funtail>
+Var Parser::idtail(Tag tag, std::string name)
 {
+	Var var;
 	if (FIRST(LPAREN))
 	{
 		move_token();
@@ -77,31 +81,35 @@ void Parser::idtail(Tag tag, std::string name)
 		}
 	}
 	else {
-		varrdef();
+		var = varrdef();
 		move_token();
 		deflist();
 	}
+	return var;
 }
 
-void Parser::varrdef()
+Var Parser::varrdef()
 {
-	init();
+	return init();
 }
 
-void Parser::init()
+// <init>-> ASSIGN <expr> | ¦Å
+Var Parser::init()
 {
+	Var var;
 	if (FIRST(ASSIGN))
 	{
 		move_token();
-		expr();
+		var = expr();
 	}
 	else if (FIRST(END_OF_FILE))
 	{
-		return;
+		return var;
 	}
 	else {
 		recovery();
 	}
+	return var;
 }
 
 void Parser::deflist()
@@ -205,29 +213,29 @@ void Parser::localdef()
 	deflist();
 }
 
-void Parser::expr()
+Var Parser::expr()
 {
-	item();
+	Var var = item();
 	move_token();
-	exprtail();
+	return exprtail(var);
 }
 
 /*
 	<exprtail>-><op_low> <item> <exprtail> | SEMICOLON
 */
-void Parser::exprtail()
+Var Parser::exprtail(Var var)
 {
 	if (FIRST(SEMICOLON))
 	{
-		return;
+		return var;
 	}
 	else 
 	{
 		op_low();
 		move_token();
-		item();
+		Var var = item();
 		move_token();
-		exprtail();
+		return exprtail(var);
 	}
 }
 
@@ -251,14 +259,14 @@ void Parser::op_low()
 	}
 }
 
-void Parser::item()
+Var Parser::item()
 {
-	factor();
-	itemtail();
+	Var var = factor();
+	return itemtail(var);
 }
 
 // <itemtail>-><op_high> <factor> <itemtail>
-void Parser::itemtail()
+Var Parser::itemtail(Var var)
 {
 	if (FIRST(MULTIPLY)OR(DIVIDE)) 
 	{
@@ -266,9 +274,11 @@ void Parser::itemtail()
 		move_token();
 		factor();
 		move_token();
-		itemtail();
+		return itemtail(var);
 	}
-
+	else {
+		return var;
+	}
 }
 
 void Parser::op_high()
@@ -283,21 +293,21 @@ void Parser::op_high()
 	}
 }
 
-void Parser::factor()
+Var Parser::factor()
 {
-	val();
+	return val();
 }
 
-void Parser::val()
+Var Parser::val()
 {
-	elem();
+	return elem();
 }
 
-void Parser::elem()
+Var Parser::elem()
 {
+	Var var;
 	if (FIRST(IDENTIFIER))
 	{
-		return;
 	}
 	else if (FIRST(LPAREN))
 	{
@@ -310,20 +320,23 @@ void Parser::elem()
 	}
 	else
 	{
-		literal();
+		var = literal();
 	}
-
+	return var;
 }
 
-void Parser::literal()
+Var Parser::literal()
 {
 	if (FIRST(LT_NUMBER)OR(LT_CHAR)OR(LT_STRING))
 	{
-		return;
+		Var var = Var(token_look_.tag(), "");
+		var.value_string = token_look_.get_name();
+		return var;
 	}
 	else 
 	{
 		recovery();
+		return Var();
 	}
 }
 
