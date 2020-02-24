@@ -40,7 +40,7 @@ private:
 	/*
 		<idtail>-><varrdef> <deflist> | LPAREN <para> RPAREN <funtail>
 	*/
-	Var idtail(Tag, std::string);
+	
 	/*
 		<varrdef>-><init>    
 	*/
@@ -149,5 +149,9 @@ private:
 	*/
 	void move_token();
 
+	void funtail();
+
+	Var idtail(Tag, std::string);
 };
+
 

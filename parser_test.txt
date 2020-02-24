@@ -1,12 +1,15 @@
+int a = 10 * 2;
 
-int a = 10;
-/*
 int f()
 {
 	int b = 20;
 	return b;
 }
+f();
 
+// 
+// 
+/*
 void main()
 {
 	string c;

@@ -1,14 +1,15 @@
 #include "Parser.h"
 #include<string>
+#include<iostream>
 #define FIRST(TAG) token_look_.tag() == TAG
 #define OR(TAG) ||token_look_.tag() == TAG
 #define TYPE_FIRST FIRST(KW_INT)OR(KW_CHAR)OR(KW_STRING)OR(KW_VOID)
 //±Ì¥Ô Ω
 #define EXPR_FIRST FIRST(LPAREN)OR(LT_NUMBER)OR(LT_CHAR)OR(LT_STRING)OR(IDENTIFIER)OR(SUB)OR(MULTIPLY)
-#define STATEMENT_FIRST EXPR_FIRST OR(SEMICOLON)OR(KW_IF)OR(KW_RETURN)
+#define STATEMENT_FIRST EXPR_FIRST OR(KW_IF)OR(KW_RETURN)
 Parser::Parser()
 {
-	
+
 }
 void Parser::begin_parse()
 {
@@ -22,7 +23,7 @@ void Parser::program()
 	{
 		return;
 	}
-	else 
+	else
 	{
 		segment();
 		program();
@@ -38,11 +39,11 @@ void Parser::segment()
 
 Tag Parser::type()
 {
-	if(TYPE_FIRST)
+	if (TYPE_FIRST)
 	{
 		return token_look_.tag();
 	}
-	else 
+	else
 	{
 		recovery();
 		return UNKNOWN;
@@ -57,35 +58,13 @@ void Parser::def(Tag tag)
 		name = token_look_.get_name();
 		move_token();
 	}
-	else 
+	else
 	{
 		recovery();
 	}
 	Var var = idtail(tag, name);
 	var.name = name;
 	sym_table_.put_sym(var);
-}
-
-// <idtail>-><varrdef> <deflist> | LPAREN <para> RPAREN <funtail>
-Var Parser::idtail(Tag tag, std::string name)
-{
-	Var var;
-	if (FIRST(LPAREN))
-	{
-		move_token();
-		para();
-		move_token();
-		if (!(FIRST(RPAREN)))
-		{
-			recovery();
-		}
-	}
-	else {
-		var = varrdef();
-		move_token();
-		deflist();
-	}
-	return var;
 }
 
 Var Parser::varrdef()
@@ -140,11 +119,12 @@ void Parser::para()
 
 void Parser::block()
 {
-	if (FIRST(LPAREN))
+	if (FIRST(LBRACES))
 	{
+		move_token();
 		subprogram();
 		move_token();
-		if (FIRST(RPAREN))
+		if (FIRST(RBRACES))
 		{
 			return;
 		}
@@ -162,7 +142,7 @@ void Parser::subprogram()
 	{
 		return;
 	}
-	else if(TYPE_FIRST)
+	else if (TYPE_FIRST)
 	{
 		localdef();
 		subprogram();
@@ -181,7 +161,7 @@ void Parser::statement()
 	{
 		move_token();
 		expr();
-		move_token();
+		//move_token();
 		if (FIRST(SEMICOLON))
 		{
 			return;
@@ -191,7 +171,7 @@ void Parser::statement()
 			recovery();
 		}
 	}
-	else 
+	else
 	{
 		expr();
 		move_token();
@@ -209,14 +189,18 @@ void Parser::statement()
 void Parser::localdef()
 {
 	type();
+	move_token();
 	defdata();
+	move_token();
 	deflist();
 }
 
+/*
+	<expr>-><item> <exprtail>
+*/
 Var Parser::expr()
 {
 	Var var = item();
-	move_token();
 	return exprtail(var);
 }
 
@@ -225,17 +209,17 @@ Var Parser::expr()
 */
 Var Parser::exprtail(Var var)
 {
-	if (FIRST(SEMICOLON))
-	{
-		return var;
-	}
-	else 
+	if (FIRST(ADD)OR(SUB))
 	{
 		op_low();
 		move_token();
 		Var var = item();
 		move_token();
 		return exprtail(var);
+	}
+	else
+	{
+		return var;
 	}
 }
 
@@ -253,7 +237,7 @@ void Parser::op_low()
 	{
 		return;
 	}
-	else 
+	else
 	{
 		recovery();
 	}
@@ -262,21 +246,28 @@ void Parser::op_low()
 Var Parser::item()
 {
 	Var var = factor();
+	move_token();
 	return itemtail(var);
 }
 
 // <itemtail>-><op_high> <factor> <itemtail>
 Var Parser::itemtail(Var var)
 {
-	if (FIRST(MULTIPLY)OR(DIVIDE)) 
+	if (FIRST(SEMICOLON))
+	{
+		return var;
+	}
+	else if (FIRST(MULTIPLY)OR(DIVIDE))
 	{
 		op_high();
 		move_token();
-		factor();
+		var = factor();
 		move_token();
 		return itemtail(var);
 	}
-	else {
+	else 
+	{
+		recovery();
 		return var;
 	}
 }
@@ -333,7 +324,7 @@ Var Parser::literal()
 		var.value_string = token_look_.get_name();
 		return var;
 	}
-	else 
+	else
 	{
 		recovery();
 		return Var();
@@ -347,4 +338,38 @@ void Parser::recovery()
 void Parser::move_token()
 {
 	token_look_ = lexer_.tokenize();
+}
+
+// <idtail>-><varrdef> <deflist> | LPAREN <para> RPAREN <funtail>
+Var Parser::idtail(Tag, std::string)
+{
+	Var var;
+	if (FIRST(LPAREN))
+	{
+		move_token();
+		para();
+		move_token();
+		if (!(FIRST(RPAREN)))
+		{
+			recovery();
+		}
+		funtail();
+	}
+	else {
+		var = varrdef();
+		move_token();
+		deflist();
+	}
+	return var;
+}
+
+void Parser::funtail()
+{
+	if (FIRST(SEMICOLON))
+	{
+		std::cout << "function call occur" << std::endl;
+	}
+	else {
+		block();
+	}
 }
