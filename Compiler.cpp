@@ -16,6 +16,7 @@ int main()
 	//lexer.scan("test.txt");
 	Parser parser;
 	parser.begin_parse();
+	parser.print_instructions();
 }
 
 void init()

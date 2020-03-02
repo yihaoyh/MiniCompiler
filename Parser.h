@@ -10,10 +10,12 @@ class Parser
 public:
 	Parser();
 	void begin_parse();
+	void print_instructions();
 private:
 	Token token_look_;
 	Lexer lexer_;
 	SymTable sym_table_;
+	Function* current_function_;
 
 	/* 
 		分析整个程序 <program>-><segment> <program> | ε
@@ -44,12 +46,12 @@ private:
 	/*
 		<varrdef>-><init>    
 	*/
-	Var varrdef();
+	Var varrdef(Var result);
 	
 	/*
 		<init>-> ASSIGN <expr> | ε
 	*/
-	Var init();
+	Var init(Var result);
 
 	/*
 		<deflist>->COMMA <defdata> <deflist> | SEMICOLON
@@ -81,7 +83,7 @@ private:
 	*/
 	void subprogram();
 	/*
-		<statement>-><expr> SEMICOLON | KW_RETURN <expr> SEMICOLON
+		<statement>-><expr> SEMICOLON | KW_RETURN <expr> SEMICOLON | ID ( ) SEMICOLON
 	*/
 	void statement();
 	/*
@@ -91,11 +93,11 @@ private:
 	/*
 		<expr>-><item> <exprtail>
 	*/
-	Var expr();
+	Var expr(Var *presult);
 	/*
 		<exprtail>-><op_low> <item> <exprtail> | SEMICOLON
 	*/
-	Var exprtail(Var);
+	Var exprtail(Var *result, Var arg1);
 	/*
 		<operator>
 	*/
@@ -109,7 +111,7 @@ private:
 	/*
 		<op_low>->+ | -
 	*/
-	void op_low();
+	Operator op_low();
 	/*
 		<item>-><factor> <itemtail>
 	*/
@@ -121,7 +123,7 @@ private:
 	/*
 		<op_high>->* | /
 	*/
-	void op_high();
+	Operator op_high();
 	/*
 		<factor>->val
 	*/
@@ -149,9 +151,15 @@ private:
 	*/
 	void move_token();
 
-	void funtail();
+	void funtail(std::string);
 
 	Var idtail(Tag, std::string);
+
+	Var idexpr(std::string);
+
+	void put_variable(Var var);
+
+	void add_instruction(InterInstruction instrunction);
 };
 
 

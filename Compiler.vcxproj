@@ -147,17 +147,27 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Call.cpp" />
     <ClCompile Include="Common.cpp" />
     <ClCompile Include="Compiler.cpp" />
+    <ClCompile Include="Frame.cpp" />
+    <ClCompile Include="Function.cpp" />
+    <ClCompile Include="InterInstruction.cpp" />
     <ClCompile Include="Lexer.cpp" />
+    <ClCompile Include="Param.cpp" />
     <ClCompile Include="Parser.cpp" />
     <ClCompile Include="SymTable.cpp" />
     <ClCompile Include="Utils.cpp" />
     <ClCompile Include="Var.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Call.h" />
     <ClInclude Include="Common.h" />
+    <ClInclude Include="Frame.h" />
+    <ClInclude Include="Function.h" />
+    <ClInclude Include="InterInstruction.h" />
     <ClInclude Include="Lexer.h" />
+    <ClInclude Include="Param.h" />
     <ClInclude Include="Parser.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="SymTable.h" />

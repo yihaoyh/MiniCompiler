@@ -17,8 +17,24 @@ void Parser::begin_parse()
 	token_look_ = lexer_.tokenize();
 	program();
 }
+void Parser::print_instructions()
+{
+	std::vector<Function> functions = sym_table_.get_functions();
+	for (unsigned int i = 0; i < functions.size(); i++)
+	{
+		Function fun = functions[i];
+		std::cout << "function " << fun.name << " begin" << std::endl;
+		std::vector<InterInstruction> insts = fun.get_instructions();
+		for (unsigned int j = 0; j < insts.size(); j++)
+		{
+			std::cout << "    " << insts[j].to_string() << std::endl;
+		}
+		std::cout << "function " << fun.name << " end" << std::endl;
+	}
+}
 void Parser::program()
 {
+	//move_token();
 	if (FIRST(END_OF_FILE))
 	{
 		return;
@@ -49,7 +65,7 @@ Tag Parser::type()
 		return UNKNOWN;
 	}
 }
-// <def>->ID <idtail>
+// <def>->ID <idtail> 代码形式如 " a = a + b"
 void Parser::def(Tag tag)
 {
 	std::string name = "";
@@ -63,23 +79,21 @@ void Parser::def(Tag tag)
 		recovery();
 	}
 	Var var = idtail(tag, name);
-	var.name = name;
-	sym_table_.put_sym(var);
 }
 
-Var Parser::varrdef()
+Var Parser::varrdef(Var result)
 {
-	return init();
+	return init(result);
 }
 
-// <init>-> ASSIGN <expr> | ε
-Var Parser::init()
+// <init>-> ASSIGN <expr> | ε  代码"= a * b"
+Var Parser::init(Var result)
 {
 	Var var;
 	if (FIRST(ASSIGN))
 	{
 		move_token();
-		var = expr();
+		var = expr(&result);
 	}
 	else if (FIRST(END_OF_FILE))
 	{
@@ -93,15 +107,25 @@ Var Parser::init()
 
 void Parser::deflist()
 {
+	//move_token();
 }
 
-// <defdata>->ID <varrdef>
+// <defdata>->ID <varrdef> 对应代码"a = 10 * b"
 void Parser::defdata()
 {
 	if (FIRST(IDENTIFIER))
 	{
+		std::string name = token_look_.get_name();
 		move_token();
-		varrdef();
+		Var result;
+		result.tag = IDENTIFIER;
+		result.name = name;
+		put_variable(result);
+		Var arg1 = varrdef(result);
+		//put_variable(arg1);
+
+		//Operator op = Operator::OP_ASSIGN;
+		//add_instruction(InterInstruction(result, op, arg1, Var::default_));
 	}
 }
 
@@ -160,10 +184,11 @@ void Parser::statement()
 	if (FIRST(KW_RETURN))
 	{
 		move_token();
-		expr();
+		Var result = expr(nullptr);
 		//move_token();
 		if (FIRST(SEMICOLON))
 		{
+			add_instruction(InterInstruction(Var::default_, Operator::OP_RETURN, result, Var::default_));
 			return;
 		}
 		else
@@ -171,9 +196,17 @@ void Parser::statement()
 			recovery();
 		}
 	}
+	//else if (FIRST(IDENTIFIER))
+	//{
+	//	std::cout << "wrong" << std::endl;
+	//	std::string name = token_look_.get_name();
+	//	move_token();
+	//	idexpr(name);
+	//}
 	else
 	{
-		expr();
+		Var var = expr(nullptr);
+		put_variable(var);
 		move_token();
 		if (FIRST(SEMICOLON))
 		{
@@ -196,31 +229,49 @@ void Parser::localdef()
 }
 
 /*
-	<expr>-><item> <exprtail>
+	<expr>-><item> <exprtail> 对应代码 "a + b","a = 10"
 */
-Var Parser::expr()
+Var Parser::expr(Var *presult)
 {
 	Var var = item();
-	return exprtail(var);
+	//move_token();
+	return exprtail(presult, var);
 }
 
 /*
-	<exprtail>-><op_low> <item> <exprtail> | SEMICOLON
+	<exprtail>-><op_low> <item> <exprtail> | SEMICOLON 对应代码 "c;"," + a;", " + a + b;"
 */
-Var Parser::exprtail(Var var)
+Var Parser::exprtail(Var* result, Var arg1)
 {
+	//move_token();
 	if (FIRST(ADD)OR(SUB))
 	{
-		op_low();
+		Operator op = op_low();
 		move_token();
-		Var var = item();
-		move_token();
-		return exprtail(var);
+		Var arg2 = item();
+
+		//move_token();
+		if (FIRST(ADD)OR(SUB))
+		{
+			Var temp = sym_table_.gen_temp_var();
+			add_instruction(InterInstruction(temp, op, arg1, arg2));
+			return exprtail(result, temp);
+		}
+		else
+		{
+			if (result == nullptr)
+			{
+				result = &Var();
+			}
+			add_instruction(InterInstruction(*result, op, arg1, arg2));
+		}
 	}
-	else
+	else if (FIRST(ASSIGN))
 	{
-		return var;
+		move_token();
+		expr(result);
 	}
+	return arg1;
 }
 
 void Parser::operator_()
@@ -231,87 +282,108 @@ void Parser::operand()
 {
 }
 
-void Parser::op_low()
+Operator Parser::op_low()
 {
 	if (FIRST(ADD)OR(SUB))
 	{
-		return;
+		switch (token_look_.tag())
+		{
+		case ADD:
+			return Operator::OP_ADD;
+		case SUB:
+			return Operator::OP_SUB;
+		}
 	}
 	else
 	{
 		recovery();
+		return Operator::OP_INVALID;
 	}
 }
-
+// 对应代码 10 * a
 Var Parser::item()
 {
 	Var var = factor();
-	move_token();
+	//move_token();
 	return itemtail(var);
 }
 
-// <itemtail>-><op_high> <factor> <itemtail>
+// <itemtail>-><op_high> <factor> <itemtail>  对应代码 * b * c 
 Var Parser::itemtail(Var var)
 {
-	if (FIRST(SEMICOLON))
+	if (FIRST(MULTIPLY)OR(DIVIDE))
 	{
-		return var;
-	}
-	else if (FIRST(MULTIPLY)OR(DIVIDE))
-	{
-		op_high();
+		Var arg1 = var;
+		Operator op = op_high();
 		move_token();
-		var = factor();
+		Var arg2 = factor();
+		Var result = sym_table_.gen_temp_var();
+		add_instruction(InterInstruction(result, op, arg1, arg2));
 		move_token();
-		return itemtail(var);
+		return itemtail(result);
 	}
-	else 
+	else
 	{
-		recovery();
 		return var;
 	}
 }
 
-void Parser::op_high()
+Operator Parser::op_high()
 {
 	if (FIRST(MULTIPLY)OR(DIVIDE))
 	{
-		return;
+		switch (token_look_.tag())
+		{
+		case MULTIPLY:
+			return Operator::OP_MUL;
+		case DIVIDE:
+			return Operator::OP_DIV;
+		}
 	}
 	else
 	{
 		recovery();
+		return Operator::OP_INVALID;
 	}
 }
 
+/* <factor> -> val */
 Var Parser::factor()
 {
 	return val();
 }
 
+/* <val> -> elem */
 Var Parser::val()
 {
 	return elem();
 }
 
+/* <elem>-> ID | (expr) | literal */
 Var Parser::elem()
 {
 	Var var;
 	if (FIRST(IDENTIFIER))
 	{
+		// 从符号表中读取变量
+		std::string name = token_look_.get_name();
+		move_token();
+		var = idexpr(name);
+
 	}
 	else if (FIRST(LPAREN))
 	{
 		move_token();
-		expr();
+		expr(nullptr);
 		move_token();
-		if (FIRST(RPAREN) == false) {
+		if (!(FIRST(RPAREN))) {
 			recovery();
 		}
 	}
 	else
 	{
 		var = literal();
+		//move_token();
 	}
 	return var;
 }
@@ -320,7 +392,7 @@ Var Parser::literal()
 {
 	if (FIRST(LT_NUMBER)OR(LT_CHAR)OR(LT_STRING))
 	{
-		Var var = Var(token_look_.tag(), "");
+		Var var = Var(token_look_.tag(), "", VarType::VAR);
 		var.value_string = token_look_.get_name();
 		return var;
 	}
@@ -333,43 +405,109 @@ Var Parser::literal()
 
 void Parser::recovery()
 {
+	std::cout << "recovery " << std::endl;
 }
 
 void Parser::move_token()
 {
-	token_look_ = lexer_.tokenize();
+	do
+	{
+		token_look_ = lexer_.tokenize();
+	} while (token_look_.tag() == COMMENT);
 }
 
 // <idtail>-><varrdef> <deflist> | LPAREN <para> RPAREN <funtail>
-Var Parser::idtail(Tag, std::string)
+Var Parser::idtail(Tag, std::string name)
 {
 	Var var;
 	if (FIRST(LPAREN))
 	{
 		move_token();
 		para();
-		move_token();
+		//move_token();
 		if (!(FIRST(RPAREN)))
 		{
 			recovery();
 		}
-		funtail();
+		move_token();
+		funtail(name);
 	}
 	else {
-		var = varrdef();
+		Var result = Var(IDENTIFIER, name, VarType::VAR);
+		var = varrdef(result);
 		move_token();
 		deflist();
+		var.name = name;
+		put_variable(var);
+		//sym_table_.put_variable(var);
 	}
 	return var;
 }
 
-void Parser::funtail()
+void Parser::funtail(std::string fun_name)
 {
 	if (FIRST(SEMICOLON))
 	{
-		std::cout << "function call occur" << std::endl;
+		std::cout << "function declaration occur name:" << fun_name << std::endl;
+		Function func = Function(fun_name, true);
+		sym_table_.put_function(func);
 	}
-	else {
+	else if (FIRST(LBRACES)) {
+		std::cout << "function definition occur name:" << fun_name << std::endl;
+		Function func = Function(fun_name, false);
+		current_function_ = &func;
 		block();
+		sym_table_.put_function(func);
+		current_function_ = nullptr;
+	}
+	move_token();
+}
+
+Var Parser::idexpr(std::string name)
+{
+	//move_token();
+	Var var;
+	if (FIRST(LPAREN))
+	{
+		move_token();
+		if (FIRST(RPAREN) == false)
+		{
+			recovery();
+		}
+		// 函数调用
+		Function fun = sym_table_.get_function(name);
+		if (fun.name != std::string(""))
+		{
+			// 待填充
+			std::cout << "function call occur : " << name << "()" << std::endl;
+			Var var = Var(IDENTIFIER, name, VarType::VAR);
+			InterInstruction inst = InterInstruction(Var::default_, Operator::OP_CALL, var, Var::default_);
+			//sym_table_.add_instruction(inst);
+			add_instruction(inst);
+		}
+		//move_token();
+	}
+	else
+	{
+		var = sym_table_.get_variable(name);
+
+	}
+	return var;
+}
+
+void Parser::put_variable(Var var)
+{
+	sym_table_.put_variable(var);
+	//if (current_function_ != nullptr)
+	//{
+	//	current_function_->put_variable(var);
+	//}
+}
+
+void Parser::add_instruction(InterInstruction instrunction)
+{
+	sym_table_.add_instruction(instrunction);
+	if (current_function_ != nullptr) {
+		current_function_->add_instruction(instrunction);
 	}
 }

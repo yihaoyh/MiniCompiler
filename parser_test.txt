@@ -1,11 +1,14 @@
-int a = 10 * 2;
-
 int f()
 {
-	int b = 20;
+	int b = 20 + 1 - 2;
 	return b;
 }
-f();
+
+void main()
+{
+	//int a = 10 * 2 + 3;
+	a = f();
+}
 
 // 
 // 
@@ -21,3 +24,4 @@ void main()
 	}
 }
 */
+

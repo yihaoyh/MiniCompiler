@@ -158,7 +158,7 @@ Token Lexer::tokenize()
 	}
 	if (pcurrent_token_ != nullptr)
 	{
-		std::cout << "occur token:" << pcurrent_token_->to_string() << std::endl;
+		std::cout << "occur token " << pcurrent_token_->to_string() << std::endl;
 		return *pcurrent_token_;
 	}
 	else
