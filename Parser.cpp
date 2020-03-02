@@ -9,12 +9,13 @@
 #define STATEMENT_FIRST EXPR_FIRST OR(KW_IF)OR(KW_RETURN)
 Parser::Parser()
 {
-
+	current_function_ = nullptr;
+	index = -1;
 }
 void Parser::begin_parse()
 {
 	lexer_.load_file("parser_test.txt");
-	token_look_ = lexer_.tokenize();
+	move_token();
 	program();
 }
 void Parser::print_instructions()
@@ -226,10 +227,19 @@ void Parser::localdef()
 	defdata();
 	move_token();
 	deflist();
+	if (FIRST(SEMICOLON))
+	{
+		move_token();
+	}
+	else 
+	{
+		recovery();
+	}
 }
 
 /*
 	<expr>-><item> <exprtail> 对应代码 "a + b","a = 10"
+	此处因为expr和assign混用，导致一系列问题，需要重构
 */
 Var Parser::expr(Var *presult)
 {
@@ -243,34 +253,43 @@ Var Parser::expr(Var *presult)
 */
 Var Parser::exprtail(Var* result, Var arg1)
 {
-	//move_token();
-	if (FIRST(ADD)OR(SUB))
-	{
-		Operator op = op_low();
+	if (FIRST(ASSIGN)) {
 		move_token();
-		Var arg2 = item();
-
-		//move_token();
+		Var var = expr(result);
+		add_instruction(InterInstruction(*result, Operator::OP_ASSIGN, var, Var::default_));
+	}
+	else {
+		move_token();
 		if (FIRST(ADD)OR(SUB))
 		{
-			Var temp = sym_table_.gen_temp_var();
-			add_instruction(InterInstruction(temp, op, arg1, arg2));
-			return exprtail(result, temp);
+			Operator op = op_low();
+			move_token();
+			Var arg2 = item();
+
+			move_token();
+			if (FIRST(ADD)OR(SUB))
+			{
+				Var temp = sym_table_.gen_temp_var();
+				add_instruction(InterInstruction(temp, op, arg1, arg2));
+				back_token();
+				return exprtail(result, temp);
+			}
+			else
+			{
+				if (result == nullptr)
+				{
+					result = &Var();
+				}
+				add_instruction(InterInstruction(*result, op, arg1, arg2));
+				back_token();
+			}
 		}
 		else
 		{
-			if (result == nullptr)
-			{
-				result = &Var();
-			}
-			add_instruction(InterInstruction(*result, op, arg1, arg2));
+			back_token();
 		}
 	}
-	else if (FIRST(ASSIGN))
-	{
-		move_token();
-		expr(result);
-	}
+	
 	return arg1;
 }
 
@@ -305,7 +324,9 @@ Var Parser::item()
 {
 	Var var = factor();
 	//move_token();
-	return itemtail(var);
+	var = itemtail(var);
+	std::cout << "item " << token_look_.get_name() << std::endl;
+	return var;
 }
 
 // <itemtail>-><op_high> <factor> <itemtail>  对应代码 * b * c 
@@ -347,7 +368,7 @@ Operator Parser::op_high()
 	}
 }
 
-/* <factor> -> val */
+/* <factor> -> val factor()会多读一个token */
 Var Parser::factor()
 {
 	return val();
@@ -359,7 +380,7 @@ Var Parser::val()
 	return elem();
 }
 
-/* <elem>-> ID | (expr) | literal */
+/* <elem>-> ID | (expr) | literal   elem() 会多读一个token*/ 
 Var Parser::elem()
 {
 	Var var;
@@ -410,10 +431,19 @@ void Parser::recovery()
 
 void Parser::move_token()
 {
-	do
+	if(index == token_stack_.size() - 1)
 	{
-		token_look_ = lexer_.tokenize();
-	} while (token_look_.tag() == COMMENT);
+		do
+		{
+			token_look_ = lexer_.tokenize();
+		} while (token_look_.tag() == COMMENT);
+		token_stack_.push_back(token_look_);
+		index++;
+	}
+	else {
+		token_look_ = token_stack_[++index];
+	}
+
 }
 
 // <idtail>-><varrdef> <deflist> | LPAREN <para> RPAREN <funtail>
@@ -480,8 +510,9 @@ Var Parser::idexpr(std::string name)
 		{
 			// 待填充
 			std::cout << "function call occur : " << name << "()" << std::endl;
-			Var var = Var(IDENTIFIER, name, VarType::VAR);
-			InterInstruction inst = InterInstruction(Var::default_, Operator::OP_CALL, var, Var::default_);
+			Var arg1 = Var(IDENTIFIER, name, VarType::VAR);
+			var = sym_table_.gen_temp_var();
+			InterInstruction inst = InterInstruction(var, Operator::OP_CALL, arg1, Var::default_);
 			//sym_table_.add_instruction(inst);
 			add_instruction(inst);
 		}
@@ -490,6 +521,7 @@ Var Parser::idexpr(std::string name)
 	else
 	{
 		var = sym_table_.get_variable(name);
+		//back_token();
 
 	}
 	return var;
@@ -510,4 +542,15 @@ void Parser::add_instruction(InterInstruction instrunction)
 	if (current_function_ != nullptr) {
 		current_function_->add_instruction(instrunction);
 	}
+}
+
+void Parser::back_token()
+{
+	if (index > 0)
+	{
+		token_look_ = token_stack_[--index];
+	}
+
+	
+	//token_stack_.pop_back();
 }

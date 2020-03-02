@@ -16,6 +16,8 @@ private:
 	Lexer lexer_;
 	SymTable sym_table_;
 	Function* current_function_;
+	std::vector<Token> token_stack_;
+	int index;
 
 	/* 
 		分析整个程序 <program>-><segment> <program> | ε
@@ -160,6 +162,8 @@ private:
 	void put_variable(Var var);
 
 	void add_instruction(InterInstruction instrunction);
+	
+	void back_token();
 };
 
 
