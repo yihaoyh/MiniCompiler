@@ -349,26 +349,9 @@ Var Parser::alo_tail(Var arg1)
 		Operator op = op_low();
 		move_token();
 		Var arg2 = item();
-		//move_token();
 		Var temp = sym_table_.gen_temp_var();
 		add_instruction(InterInstruction(temp, op, arg1, arg2));
 		return alo_tail(temp);
-		/*if (FIRST(ADD)OR(SUB))
-		{
-			Var temp = sym_table_.gen_temp_var();
-			add_instruction(InterInstruction(temp, op, arg1, arg2));
-			back_token();
-			return exprtail(result, temp);
-		}
-		else
-		{
-			if (result == nullptr)
-			{
-				result = &Var();
-			}
-			add_instruction(InterInstruction(*result, op, arg1, arg2));
-			back_token();
-		}*/
 	}
 	else
 	{
@@ -380,9 +363,9 @@ Var Parser::alo_tail(Var arg1)
 Var Parser::item()
 {
 	Var var = factor();
-	//move_token();
+	move_token();
 	var = itemtail(var);
-	std::cout << "item " << token_look_.get_name() << std::endl;
+	//std::cout << "item " << token_look_.get_name() << std::endl;
 	return var;
 }
 
@@ -402,7 +385,7 @@ Var Parser::itemtail(Var var)
 	}
 	else
 	{
-		move_token();
+		//move_token();
 		return var;
 	}
 }
@@ -453,7 +436,7 @@ Var Parser::elem()
 	else if (FIRST(LPAREN))
 	{
 		move_token();
-		expr(nullptr);
+		var = expr(nullptr);
 		move_token();
 		if (!(FIRST(RPAREN))) {
 			recovery();
@@ -462,7 +445,6 @@ Var Parser::elem()
 	else
 	{
 		var = literal();
-		//move_token();
 	}
 	return var;
 }
