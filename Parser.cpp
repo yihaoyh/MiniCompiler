@@ -219,6 +219,24 @@ void Parser::statement()
 		}
 	}
 }
+Var Parser::assign_expr()
+{
+	//Var var = item();
+	//move_token();
+	//ret
+	Var lvalue = alo_expr();
+	return assign_tail(lvalue);
+}
+Var Parser::assign_tail(Var lvalue)
+{
+	if (FIRST(ASSIGN))
+	{
+		move_token();
+		Var rvalue = assign_expr();
+		return assign_tail(lvalue);
+	}
+	return lvalue;
+}
 // <localdef>-><type> <defdata> <deflist>
 void Parser::localdef()
 {
@@ -243,9 +261,7 @@ void Parser::localdef()
 */
 Var Parser::expr(Var *presult)
 {
-	Var var = item();
-	//move_token();
-	return exprtail(presult, var);
+	return assign_expr();
 }
 
 /*
@@ -319,6 +335,47 @@ Operator Parser::op_low()
 		return Operator::OP_INVALID;
 	}
 }
+Var Parser::alo_expr()
+{
+	Var var = item();
+	return alo_tail(var);
+}
+
+// 对应 + a + b;
+Var Parser::alo_tail(Var arg1)
+{
+	if (FIRST(ADD)OR(SUB))
+	{
+		Operator op = op_low();
+		move_token();
+		Var arg2 = item();
+		//move_token();
+		Var temp = sym_table_.gen_temp_var();
+		add_instruction(InterInstruction(temp, op, arg1, arg2));
+		return alo_tail(temp);
+		/*if (FIRST(ADD)OR(SUB))
+		{
+			Var temp = sym_table_.gen_temp_var();
+			add_instruction(InterInstruction(temp, op, arg1, arg2));
+			back_token();
+			return exprtail(result, temp);
+		}
+		else
+		{
+			if (result == nullptr)
+			{
+				result = &Var();
+			}
+			add_instruction(InterInstruction(*result, op, arg1, arg2));
+			back_token();
+		}*/
+	}
+	else
+	{
+		back_token();
+	}
+	return arg1;
+}
 // 对应代码 10 * a
 Var Parser::item()
 {
@@ -345,6 +402,7 @@ Var Parser::itemtail(Var var)
 	}
 	else
 	{
+		move_token();
 		return var;
 	}
 }
@@ -426,7 +484,7 @@ Var Parser::literal()
 
 void Parser::recovery()
 {
-	std::cout << "recovery " << std::endl;
+	std::cout << "recovery wrong token "<< token_look_.get_name() << std::endl;
 }
 
 void Parser::move_token()
@@ -495,7 +553,6 @@ void Parser::funtail(std::string fun_name)
 
 Var Parser::idexpr(std::string name)
 {
-	//move_token();
 	Var var;
 	if (FIRST(LPAREN))
 	{
@@ -521,7 +578,6 @@ Var Parser::idexpr(std::string name)
 	else
 	{
 		var = sym_table_.get_variable(name);
-		//back_token();
 
 	}
 	return var;
