@@ -1,13 +1,8 @@
-int f()
-{
-	int b = 20 + 1 - 2;
-	return b;
-}
-
 void main()
 {
-	int a = 10 * 2 + 3;
-	a = f();
+    int a = 10;
+	a = a + 2 + 3;
+	// a = f();
 }
 
 // 
@@ -25,3 +20,8 @@ void main()
 }
 */
 
+/*int f()
+{
+	int b = 20 + 1 - 2;
+	return b;
+}*/

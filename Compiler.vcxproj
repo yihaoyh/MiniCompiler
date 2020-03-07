@@ -148,6 +148,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Call.cpp" />
+    <ClCompile Include="CodeGen.cpp" />
     <ClCompile Include="Common.cpp" />
     <ClCompile Include="Compiler.cpp" />
     <ClCompile Include="Frame.cpp" />
@@ -162,6 +163,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Call.h" />
+    <ClInclude Include="CodeGen.h" />
     <ClInclude Include="Common.h" />
     <ClInclude Include="Frame.h" />
     <ClInclude Include="Function.h" />

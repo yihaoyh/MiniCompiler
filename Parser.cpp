@@ -1,6 +1,7 @@
 #include "Parser.h"
 #include<string>
 #include<iostream>
+#include"CodeGen.h"
 #define FIRST(TAG) token_look_.tag() == TAG
 #define OR(TAG) ||token_look_.tag() == TAG
 #define TYPE_FIRST FIRST(KW_INT)OR(KW_CHAR)OR(KW_STRING)OR(KW_VOID)
@@ -31,7 +32,11 @@ void Parser::print_instructions()
 			std::cout << "    " << insts[j].to_string() << std::endl;
 		}
 		std::cout << "function " << fun.name << " end" << std::endl;
+		CodeGen code_gen = CodeGen();
+		std::cout << "\n" << "code\n"<<code_gen.begin(insts);
 	}
+
+
 }
 void Parser::program()
 {
@@ -95,6 +100,7 @@ Var Parser::init(Var result)
 	{
 		move_token();
 		var = expr(&result);
+		add_instruction(InterInstruction(result, Operator::OP_ASSIGN, var, Var::default_));
 	}
 	else if (FIRST(END_OF_FILE))
 	{
@@ -197,18 +203,11 @@ void Parser::statement()
 			recovery();
 		}
 	}
-	//else if (FIRST(IDENTIFIER))
-	//{
-	//	std::cout << "wrong" << std::endl;
-	//	std::string name = token_look_.get_name();
-	//	move_token();
-	//	idexpr(name);
-	//}
 	else
 	{
 		Var var = expr(nullptr);
 		put_variable(var);
-		move_token();
+		//move_token();
 		if (FIRST(SEMICOLON))
 		{
 			return;
@@ -233,7 +232,9 @@ Var Parser::assign_tail(Var lvalue)
 	{
 		move_token();
 		Var rvalue = assign_expr();
-		return assign_tail(lvalue);
+		add_instruction(InterInstruction(lvalue, Operator::OP_ASSIGN, rvalue, Var::default_));
+		//return lvalue;
+		//return assign_tail(lvalue);
 	}
 	return lvalue;
 }
@@ -243,7 +244,7 @@ void Parser::localdef()
 	type();
 	move_token();
 	defdata();
-	move_token();
+	//move_token();
 	deflist();
 	if (FIRST(SEMICOLON))
 	{
@@ -269,19 +270,20 @@ Var Parser::expr(Var *presult)
 */
 Var Parser::exprtail(Var* result, Var arg1)
 {
-	if (FIRST(ASSIGN)) {
+	if (FIRST(ASSIGN)) 
+	{
 		move_token();
 		Var var = expr(result);
 		add_instruction(InterInstruction(*result, Operator::OP_ASSIGN, var, Var::default_));
 	}
-	else {
+	else 
+	{
 		move_token();
 		if (FIRST(ADD)OR(SUB))
 		{
 			Operator op = op_low();
 			move_token();
 			Var arg2 = item();
-
 			move_token();
 			if (FIRST(ADD)OR(SUB))
 			{
@@ -353,10 +355,10 @@ Var Parser::alo_tail(Var arg1)
 		add_instruction(InterInstruction(temp, op, arg1, arg2));
 		return alo_tail(temp);
 	}
-	else
-	{
-		back_token();
-	}
+	//else
+	//{
+	//	back_token();
+	//}
 	return arg1;
 }
 // ¶ÔÓ¦´úÂë 10 * a
@@ -560,7 +562,7 @@ Var Parser::idexpr(std::string name)
 	else
 	{
 		var = sym_table_.get_variable(name);
-
+		back_token();
 	}
 	return var;
 }

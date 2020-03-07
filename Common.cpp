@@ -23,3 +23,7 @@ Tag get_keyword_tag(std::string key)
 	}
 	return UNKNOWN;
 }
+
+void print_error(const char* message)
+{
+}

@@ -15,3 +15,5 @@ enum class Operator
 	OP_SET_PARAM, // 设置参数
 	OP_RETURN // 返回
 };
+
+void print_error(const char* message);

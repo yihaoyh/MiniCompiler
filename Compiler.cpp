@@ -12,8 +12,6 @@ extern std::map<std::string, Tag> keyword_table;
 int main()
 {
 	init_keyword_table();
-	//Lexer lexer;
-	//lexer.scan("test.txt");
 	Parser parser;
 	parser.begin_parse();
 	parser.print_instructions();
