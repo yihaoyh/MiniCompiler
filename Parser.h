@@ -199,6 +199,8 @@ private:
 	Var alo_expr();
 
 	Var alo_tail(Var var);
+
+	bool match(Tag tag);
 };
 
 

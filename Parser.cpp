@@ -138,6 +138,15 @@ void Parser::defdata()
 
 void Parser::paradata()
 {
+	if (TYPE_FIRST)
+	{
+		move_token();
+		if (match(IDENTIFIER))
+		{
+			std::cout << "para name "<< token_look_.get_name() << std::endl;
+			// 将参数类型添加到函数
+		}
+	}
 }
 
 void Parser::paradatatail()
@@ -146,6 +155,11 @@ void Parser::paradatatail()
 
 void Parser::para()
 {
+	paradata();
+	if (match(COMMA))
+	{
+		para();
+	}
 }
 
 void Parser::block()
@@ -360,6 +374,18 @@ Var Parser::alo_tail(Var arg1)
 	//	back_token();
 	//}
 	return arg1;
+}
+bool Parser::match(Tag tag)
+{
+	if (token_look_.tag() == tag)
+	{
+		move_token();
+		return true;
+	}
+	else
+	{
+		return false;
+	}
 }
 // 对应代码 10 * a
 Var Parser::item()
