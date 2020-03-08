@@ -201,6 +201,9 @@ private:
 	Var alo_tail(Var var);
 
 	bool match(Tag tag);
+
+	// ²ÎÊı´«µİ
+	void para_transit(); 
 };
 
 

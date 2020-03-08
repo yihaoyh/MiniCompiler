@@ -222,7 +222,7 @@ void Parser::statement()
 		Var var = expr(nullptr);
 		put_variable(var);
 		//move_token();
-		if (FIRST(SEMICOLON))
+		if (match(SEMICOLON))
 		{
 			return;
 		}
@@ -387,6 +387,15 @@ bool Parser::match(Tag tag)
 		return false;
 	}
 }
+void Parser::para_transit()
+{
+	Var var = expr(nullptr);
+	std::cout << "parse one param" << std::endl;
+	if (match(COMMA))
+	{
+		para_transit();
+	}
+}
 // 对应代码 10 * a
 Var Parser::item()
 {
@@ -449,7 +458,7 @@ Var Parser::val()
 	return elem();
 }
 
-/* <elem>-> ID | (expr) | literal   elem() 会多读一个token*/ 
+/* <elem>-> ID |ID()| (expr) | literal   elem() 会多读一个token*/ 
 Var Parser::elem()
 {
 	Var var;
@@ -564,13 +573,15 @@ void Parser::funtail(std::string fun_name)
 Var Parser::idexpr(std::string name)
 {
 	Var var;
-	if (FIRST(LPAREN))
+	if (match(LPAREN))
 	{
-		move_token();
+		// 处理传参
+		para_transit();
 		if (FIRST(RPAREN) == false)
 		{
 			recovery();
 		}
+
 		// 函数调用
 		Function fun = sym_table_.get_function(name);
 		if (fun.name != std::string(""))
