@@ -1,28 +1,73 @@
 #include "CodeGen.h"
 #include <sstream>
 #include "Common.h"
+#include "Utils.h"
+
 #define VAR_LENGTH 8
-std::string CodeGen::begin(std::vector<InterInstruction> insts)
+std::string CodeGen::parse_function(std::vector<InterInstruction> insts)
 {
 	std::string code = "";
-	code += gen_header(frame_.fun_name);
-	code += gen_enter_call();
+	code += gen_header(curr_frame_.fun_name);
+	code += gen_enter_proc();
 	for (auto iter = insts.begin(); iter != insts.end(); ++iter)
 	{
 		code += parse_instruction(*iter);
+	}
+	code += gen_exit_proc();
+	return code;
+}
+
+std::string CodeGen::parse_functions(std::vector<Function> functions)
+{
+	std::string code = "";
+	for (auto iter = functions.begin(); iter != functions.end(); ++iter)
+	{
+		function_ = &(*iter);
+		curr_frame_ = Frame(nullptr, iter->name, iter->get_params());
+		parse_params();
+		code += parse_function(function_->get_instructions());
 	}
 	return code;
 }
 
 std::string CodeGen::parse_instruction(const InterInstruction& inst)
 {
+	Var result = get_var(inst.result);
+	Var arg1 = get_var(inst.arg1);
+	Var arg2 = get_var(inst.arg2);
+	std::string code = "";
 	switch (inst.op)
 	{
 	case Operator::OP_ADD:
 	case Operator::OP_SUB:
-		return gen_low_op(inst.op, inst.result, inst.arg1, inst.arg2);
+		if (result.tag != IDENTIFIER)
+		{
+			error("result must be lvalue in add/sub");
+			return "";
+		}
+		if (arg1.tag!=IDENTIFIER && arg1.tag != LT_NUMBER)
+		{
+			error("arg1 must be number or id in add/sub");
+		}
+		if (arg2.tag != IDENTIFIER && arg2.tag != LT_NUMBER)
+		{
+			error("arg2 must be number or id in add/sub");
+		}
+		return gen_low_op(inst.op, result, arg1, arg2);
 	case Operator::OP_ASSIGN:
-		return gen_assign(inst.result, inst.arg1);
+		if (result.tag != IDENTIFIER)
+		{
+			error("result must be lvalue in add/sub");
+			return "";
+		}
+		return gen_assign(result, arg1);
+	case Operator::OP_SET_PARAM:
+		return gen_set_param(arg1);
+	case Operator::OP_CALL:
+		code = gen_call(result, inst.arg1.value);
+		return code;
+	case Operator::OP_RETURN:
+		return gen_return(arg1);
 	default:
 		return "";
 	}
@@ -35,6 +80,16 @@ std::string CodeGen::gen_header(const std::string& fun_name)
 		return "";
 	}
 	std::stringstream sstream;
+	if (fun_name == "main")
+	{
+		sstream << ".LC0:\n" \
+			"\t.string	\"%d\\n\"\n"\
+			"\t.text\n";
+	}
+	else
+	{
+		sstream << "\t.text\n";
+	}
 	sstream << "\t.globl  " << fun_name << "\n";
 	sstream << fun_name << ":" << "\n";
 	return sstream.str();
@@ -68,13 +123,13 @@ std::string CodeGen::gen_assign(const Var& lval, const Var& rval)
 	}
 	else if (rval.tag == IDENTIFIER)
 	{
-		if (!frame_.is_variable_exists(rval.name))
+		if (!curr_frame_.is_variable_exists(rval.name))
 		{
 			std::string str_error = "var " + rval.name + " not exists in frame";
 			print_error(str_error.c_str());
 			return "";
 		}
-		long offset = frame_.get_variable_offset(rval.name);
+		long offset = curr_frame_.get_variable_offset(rval.name);
 		if (offset == 0)
 		{
 			std::stringstream sstream;
@@ -86,9 +141,9 @@ std::string CodeGen::gen_assign(const Var& lval, const Var& rval)
 		str_rval = "%rcx";
 	}
 	code += "movq " + str_rval + ", %rbx\n";
-	if (frame_.is_variable_exists(lval.name))
+	if (curr_frame_.is_variable_exists(lval.name))
 	{
-		long offset = frame_.get_variable_offset(lval.name);
+		long offset = curr_frame_.get_variable_offset(lval.name);
 		if (offset == 0)
 		{
 			std::stringstream sstream;
@@ -101,7 +156,7 @@ std::string CodeGen::gen_assign(const Var& lval, const Var& rval)
 	else
 	{
 		code += gen_create_variable("%rbx");
-		frame_.insert_variable(lval.name, 8);
+		curr_frame_.add_local(lval.name, 8);
 	}
 	return code;
 }
@@ -124,7 +179,7 @@ std::string CodeGen::gen_low_op(Operator op, const Var& result, const Var& lval,
 	std::string str_lval = "";
 	std::string str_rval = "";
 	std::string str_op;
-	if (!(op == Operator::OP_ADD||op == Operator::OP_SUB))
+	if (!(op == Operator::OP_ADD || op == Operator::OP_SUB))
 	{
 		return "";
 	}
@@ -139,12 +194,11 @@ std::string CodeGen::gen_low_op(Operator op, const Var& result, const Var& lval,
 	}
 	else if (lval.tag == IDENTIFIER)
 	{
-		if (!frame_.is_variable_exists(lval.name))
+		if (!curr_frame_.is_variable_exists(lval.name))
 		{
-
 			return "";
 		}
-		long offset = frame_.get_variable_offset(lval.name);
+		long offset = curr_frame_.get_variable_offset(lval.name);
 		if (offset == 0)
 		{
 			std::stringstream sstream;
@@ -162,11 +216,11 @@ std::string CodeGen::gen_low_op(Operator op, const Var& result, const Var& lval,
 	}
 	else if (rval.tag == IDENTIFIER)
 	{
-		if (!frame_.is_variable_exists(rval.name))
+		if (!curr_frame_.is_variable_exists(rval.name))
 		{
 			return "";
 		}
-		long offset = frame_.get_variable_offset(rval.name);
+		long offset = curr_frame_.get_variable_offset(rval.name);
 		if (offset == 0)
 		{
 			std::stringstream sstream;
@@ -177,8 +231,8 @@ std::string CodeGen::gen_low_op(Operator op, const Var& result, const Var& lval,
 		code += gen_load_variable("%rcx", offset);
 		str_rval = "%rcx";
 	}
-	if(op == Operator::OP_ADD)
-	{ 
+	if (op == Operator::OP_ADD)
+	{
 		str_op = "addq";
 	}
 	else
@@ -186,9 +240,9 @@ std::string CodeGen::gen_low_op(Operator op, const Var& result, const Var& lval,
 		str_op = "subq";
 	}
 	code += str_op + " %rcx, %rbx\n";
-	if (frame_.is_variable_exists(result.name))
+	if (curr_frame_.is_variable_exists(result.name))
 	{
-		long offset = frame_.get_variable_offset(result.name);
+		long offset = curr_frame_.get_variable_offset(result.name);
 		if (offset == 0)
 		{
 			std::stringstream sstream;
@@ -201,7 +255,7 @@ std::string CodeGen::gen_low_op(Operator op, const Var& result, const Var& lval,
 	else
 	{
 		code += gen_create_variable("%rbx");
-		frame_.insert_variable(result.name, 8);
+		curr_frame_.add_local(result.name, 8);
 	}
 	return code;
 }
@@ -221,16 +275,27 @@ std::string CodeGen::gen_div(const Var& result, const Var& lval, const Var& rval
 	return std::string();
 }
 
-std::string CodeGen::gen_enter_call()
+std::string CodeGen::gen_enter_proc()
 {
-	
-	return "pushq %rbp\nmovq %rsp, %rbp\n";
+	return "pushq %rbp\n"\
+		   "movq %rsp, %rbp\n";
 }
 
-std::string CodeGen::gen_exit_call()
+std::string CodeGen::gen_exit_proc()
 {
-	std::string code = "popq %rbp\n";
-	code += "ret\n";
+	std::stringstream sstream;
+	// addq $16, %rsp
+	sstream << "addq $" << curr_frame_.get_frame_length() << ", %rsp\n";
+	sstream << "popq %rbp\n"\
+		    "ret\n";
+	return sstream.str();
+}
+
+std::string CodeGen::gen_return(const Var& result)
+{
+	std::string code = "";
+	code += gen_access_arg(result, "%rbx");
+	code += "movq %rbx, %rax\n";
 	return code;
 }
 
@@ -239,25 +304,21 @@ std::string CodeGen::gen_exit_call()
  * reg_name 寄存器名称，现在只支持rbx或者rcx
  * offset 相对于bsp的偏移地址
  */
-std::string CodeGen::gen_load_variable(const std::string reg_name, long offset)
+std::string CodeGen::gen_load_variable(const std::string& reg_name, long offset)
 {
 	if (!is_reg_valid(reg_name))
 	{
 		return "";
 	}
 	std::stringstream sstream;
-	if (offset >= 0)
-	{
-		return "";
-	}
 	sstream << "movq " << offset << "(%rbp), " << reg_name << "\n";
 	return sstream.str();
 }
 
 /*
- * 生成一条创建变量的汇编指令，实现方式是将变量压栈，类似 pushq %ebx
+ * 生成一条创建变量的汇编指令，实现方式是将变量压栈，类似 pushq %rbx
  */
-std::string CodeGen::gen_create_variable(const std::string reg_name)
+std::string CodeGen::gen_create_variable(const std::string& reg_name)
 {
 	if (!is_reg_valid(reg_name))
 	{
@@ -268,7 +329,7 @@ std::string CodeGen::gen_create_variable(const std::string reg_name)
 	return sstream.str();
 }
 
-std::string CodeGen::gen_save_variable(const std::string reg_name, long offset)
+std::string CodeGen::gen_save_variable(const std::string& reg_name, long offset)
 {
 	if (!is_reg_valid(reg_name))
 	{
@@ -279,7 +340,29 @@ std::string CodeGen::gen_save_variable(const std::string reg_name, long offset)
 	return sstream.str();
 }
 
-bool CodeGen::is_reg_valid(std::string reg_name)
+std::string CodeGen::gen_call(const Var& result, const std::string& fun_name)
+{
+	std::stringstream sstream;
+	sstream << "call " << fun_name << "\n";
+	if (result.tag != UNKNOWN)
+	{
+		sstream << "movq %rax, %rbx\n";
+		sstream << gen_create_variable("%rbx");
+		curr_frame_.add_local(result.name, get_type_length(result.type));
+	}
+	return sstream.str();
+}
+
+std::string CodeGen::gen_set_param(const Var& param)
+{
+	std::string code = "";
+	code += gen_access_arg(param, "%rbx");
+	code += "pushq %rbx\n";
+	curr_frame_.add_param_out(get_type_length(param.type));
+	return code;
+}
+
+bool CodeGen::is_reg_valid(const std::string& reg_name)
 {
 	if (reg_name == "%rbx" || reg_name == "%rcx")
 	{
@@ -288,3 +371,89 @@ bool CodeGen::is_reg_valid(std::string reg_name)
 	return false;
 }
 
+/*
+ * 通过指令地址获取变量
+ */
+Var CodeGen::get_var(const Address& address)
+{
+	switch (address.type)
+	{
+	case NAME:
+	case TEMP_VAR:
+		return function_->get_variable(address.value);
+	case LITERAL_NUMBER:
+		return Var(LT_NUMBER, "", address.value, Type::INT);
+	case LITERAL_CHAR:
+		return Var(LT_CHAR, "", address.value, Type::CHAR);
+	case LITERAL_STRING:
+		return Var(LT_STRING, "", address.value, Type::STRING);
+	default:
+		return Var();
+	}
+}
+
+std::string CodeGen::gen_access_arg(const Var& var, const std::string& reg_name)
+{
+	if (!is_reg_valid(reg_name))
+	{
+		return "";
+	}
+	std::string str_val;
+	if (var.tag == LT_NUMBER)
+	{
+		str_val = "$" + var.value_string;
+		return "movq " + str_val + " , " + reg_name + "\n";
+	}
+	else if (var.tag == IDENTIFIER)
+	{
+		if (!curr_frame_.is_variable_exists(var.name))
+		{
+			return "";
+		}
+		long offset = curr_frame_.get_variable_offset(var.name);
+		if (offset == 0)
+		{
+			std::stringstream sstream;
+			sstream << "var " << var.name << " offset is 0";
+			print_error(sstream.str().c_str());
+			return "";
+		}
+		return gen_load_variable(reg_name, offset);
+	}
+	return "";
+}
+
+void CodeGen::parse_params()
+{
+	if (function_ == nullptr)
+	{
+		return ;
+	}
+	std::string code = "";
+	int offset = 8; // 因为之前执行过push rbp和mov rsp, rbp，所以偏移起始位8
+	const std::vector<Var> params = function_->get_params();
+	for (unsigned int i = 0; i < params.size(); i++)
+	{
+		Var var = params[i];
+		int length = get_type_length(var.type);
+		if (length == 0)
+		{
+			continue;
+		}
+		offset += length;
+		curr_frame_.add_param_in(var.name, offset);
+	}
+}
+
+/* 
+	获取类型的长度，单位为字节
+*/
+int CodeGen::get_type_length(const Type& type)
+{
+	switch (type)
+	{
+	case Type::INT:
+		return 8;
+	}
+	return 0;
+}

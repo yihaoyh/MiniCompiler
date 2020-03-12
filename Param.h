@@ -4,7 +4,7 @@ class Param
 {
 public:
 	Var var;
-	bool isEscape;
+	bool isEscape;    //  «∑ÒÃ”“›
 
 	Param(Var var, bool isEscape) :var{ var },isEscape{ isEscape }
 	{

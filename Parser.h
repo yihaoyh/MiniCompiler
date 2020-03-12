@@ -5,6 +5,7 @@
 #include"Lexer.h"
 #include"Var.h"
 #include"SymTable.h"
+#include"Function.h"
 class Parser
 {
 public:
@@ -12,13 +13,6 @@ public:
 	void begin_parse();
 	void print_instructions();
 private:
-	Token token_look_;
-	Lexer lexer_;
-	SymTable sym_table_;
-	Function* current_function_;
-	std::vector<Token> token_stack_;
-	int index;
-
 	/* 
 		分析整个程序 <program>-><segment> <program> | ε
 	*/
@@ -33,13 +27,13 @@ private:
 	/*
 		类型 <type>->KW_INT | KW_CHAR | KW_STRING | KW_VOID
 	*/
-	Tag type();
+	Type type();
 
 	/*
 		变量、函数的声明或定义
 		<def>->ID <idtail>
 	*/
-	void def(Tag);
+	void def(const Type& type);
 
 	/*
 		<idtail>-><varrdef> <deflist> | LPAREN <para> RPAREN <funtail>
@@ -63,12 +57,12 @@ private:
 	/*
 		<defdata>->ID <varrdef>
 	*/
-	void defdata();
+	void defdata(const Type& type);
 
 	/*
 		<paradata>->MUL ID | ID <paradatatail>
 	*/
-	void paradata();
+	void paradata(std::vector<Var>& params);
 
 	/*
 		<paradatatail>->LBRACKET NUM RBRACKET | ε
@@ -78,7 +72,7 @@ private:
 	/*
 		<para>-><type> <paradata> <paralist> | ε
 	*/
-	void para();
+	void para(std::vector<Var>& params);
 
 	/*
 		<block>->LBRACES <subprogram> RBRACES
@@ -102,9 +96,9 @@ private:
 	Var assign_expr();
 
 	/*
-	    <assign_tail>->=<assign_tail>
+	    <assign_tail>-> = <assign_expr>
 	*/
-	Var assign_tail(Var var);
+	void assign_tail(Var var);
 
 	/*
 		<localdef>-><type> <defdata> <deflist>
@@ -114,7 +108,7 @@ private:
 	/*
 		<expr>-><item> <exprtail>
 	*/
-	Var expr(Var *presult);
+	Var expr();
 
 	/*
 		<exprtail>-><op_low> <item> <exprtail> | SEMICOLON
@@ -129,7 +123,7 @@ private:
 	/*
 		<itemtail>-><op_high> <factor> <itemtail> | ε
 	*/
-	Var itemtail(Var);
+	Var itemtail(const Var&);
 
 	/*
 		<op_high>->* | /
@@ -166,9 +160,9 @@ private:
 	*/
 	void move_token();
 
-	void funtail(std::string);
+	void funtail(const Type& type, std::string, const std::vector<Var>& params);
 
-	Var idtail(Tag, std::string);
+	Var idtail(const Type&, std::string);
 
 	Var idexpr(std::string);
 
@@ -198,12 +192,28 @@ private:
 
 	Var alo_expr();
 
-	Var alo_tail(Var var);
+	Var alo_tail(const Var& var);
 
-	bool match(Tag tag);
+	bool match(const Tag& tag);
 
 	// 参数传递
 	void para_transit(); 
+
+	Function get_function(std::string);
+
+	void put_function(Function);
+	//void set_current_function(Function*);
+	//Function* get_current_function();
+	std::vector<Function> get_functions();
+
+	Token token_look_;
+	Lexer lexer_;
+	//SymTable sym_table_;
+	Function* current_function_;
+	std::vector<Token> token_stack_;
+	std::vector<Function> functions_;
+	int index;
+	std::map<std::string, Function> function_table_; // 函数表
 };
 
 

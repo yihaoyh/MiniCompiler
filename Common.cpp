@@ -2,6 +2,7 @@
 #include<map>
 #include<string>
 #include"Lexer.h"
+#include"Utils.h"
 std::map<std::string, Tag> keyword_table;
 
 void init_keyword_table() 
@@ -26,4 +27,5 @@ Tag get_keyword_tag(std::string key)
 
 void print_error(const char* message)
 {
+	error(message);
 }

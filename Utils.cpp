@@ -1,4 +1,5 @@
 #include"Utils.h"
+#include<sstream>
 /*
 * 从文件中读取字符串
 */
@@ -45,4 +46,13 @@ bool is_alphabet(char ch)
 		return true;
 	}
 	return false;
+}
+
+std::string gen_print_int(int value)
+{
+	std::stringstream sstream;
+	sstream << "movl $" << value << ", %esi\n";
+	sstream << "leaq	.LC0(%rip), %rdi\n";
+	sstream << "call	printf@PLT\n";
+	return std::string();
 }

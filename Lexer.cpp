@@ -42,7 +42,7 @@ Token Lexer::tokenize()
 		skip_white_space();
 		current_char = get_char();
 	}
-	if (is_digit(current_char) && current_char != '0')
+	if (is_digit(current_char))
 	{
 		parse_number(current_char);
 	}
