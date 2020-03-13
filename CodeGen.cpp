@@ -1,9 +1,12 @@
 #include "CodeGen.h"
 #include <sstream>
+#include <assert.h>
 #include "Common.h"
 #include "Utils.h"
 
 #define VAR_LENGTH 8
+#define PARAM_OFFSET_BEGIN 16
+#define LOCAL_OFFSET_BEGIN 0
 std::string CodeGen::parse_functions(std::vector<Function> functions)
 {
 	std::string code = "";
@@ -118,38 +121,12 @@ std::string CodeGen::gen_assign(const Var& lval, const Var& rval)
 	{
 		return "";
 	}
-	if (rval.tag == LT_NUMBER)
-	{
-		str_rval = "$" + rval.value_string;
-	}
-	else if (rval.tag == IDENTIFIER)
-	{
-		if (!curr_frame_.is_variable_exists(rval.name))
-		{
-			std::string str_error = "var " + rval.name + " not exists in frame";
-			print_error(str_error.c_str());
-			return "";
-		}
-		long offset = curr_frame_.get_variable_offset(rval.name);
-		if (offset == 0)
-		{
-			std::stringstream sstream;
-			sstream << "var " << rval.name << " offset is 0";
-			print_error(sstream.str().c_str());
-			return "";
-		}
-		code += gen_load_variable("%rcx", offset);
-		str_rval = "%rcx";
-	}
-	code += "movq " + str_rval + ", %rbx\n";
+	code += gen_access_arg(rval, "%rbx");
 	if (curr_frame_.is_variable_exists(lval.name))
 	{
 		long offset = curr_frame_.get_variable_offset(lval.name);
-		if (offset == 0)
+		if (!frame_offset_check(lval.name, offset)) 
 		{
-			std::stringstream sstream;
-			sstream << "var " << lval.name << " offset is 0";
-			print_error(sstream.str().c_str());
 			return "";
 		}
 		code += gen_save_variable("%rbx", offset);
@@ -157,7 +134,7 @@ std::string CodeGen::gen_assign(const Var& lval, const Var& rval)
 	else
 	{
 		code += gen_create_variable("%rbx");
-		curr_frame_.add_local(lval.name, 8);
+		curr_frame_.add_local(lval.name, get_type_length(lval.type));
 	}
 	return code;
 }
@@ -182,63 +159,23 @@ std::string CodeGen::gen_low_op(Operator op, const Var& result, const Var& lval,
 	std::string str_op;
 	if (!(op == Operator::OP_ADD || op == Operator::OP_SUB))
 	{
+		error("invalid operator");
 		return "";
 	}
 	if (result.tag != IDENTIFIER)
 	{
+		error("result must be identifier");
 		return "";
 	}
-	if (lval.tag == LT_NUMBER)
-	{
-		str_lval = "$" + lval.value_string;
-		code += "movq " + str_lval + " , %rbx\n";
-	}
-	else if (lval.tag == IDENTIFIER)
-	{
-		if (!curr_frame_.is_variable_exists(lval.name))
-		{
-			return "";
-		}
-		long offset = curr_frame_.get_variable_offset(lval.name);
-		if (offset == 0)
-		{
-			std::stringstream sstream;
-			sstream << "var " << lval.name << " offset is 0";
-			print_error(sstream.str().c_str());
-			return "";
-		}
-		code += gen_load_variable("%rbx", offset);
-		str_lval = "%rbx";
-	}
-	if (rval.tag == LT_NUMBER)
-	{
-		str_rval = "$" + rval.value_string;
-		code += "movq " + str_rval + " , %rcx\n";
-	}
-	else if (rval.tag == IDENTIFIER)
-	{
-		if (!curr_frame_.is_variable_exists(rval.name))
-		{
-			return "";
-		}
-		long offset = curr_frame_.get_variable_offset(rval.name);
-		if (offset == 0)
-		{
-			std::stringstream sstream;
-			sstream << "var " << rval.name << " offset is 0";
-			print_error(sstream.str().c_str());
-			return "";
-		}
-		code += gen_load_variable("%rcx", offset);
-		str_rval = "%rcx";
-	}
+	code += gen_access_arg(lval, "%rbx");
+	code += gen_access_arg(rval, "%rcx");
 	if (op == Operator::OP_ADD)
 	{
-		str_op = "addq";
+		str_op = "\taddq";
 	}
 	else
 	{
-		str_op = "subq";
+		str_op = "\tsubq";
 	}
 	code += str_op + " %rcx, %rbx\n";
 	if (curr_frame_.is_variable_exists(result.name))
@@ -256,48 +193,57 @@ std::string CodeGen::gen_low_op(Operator op, const Var& result, const Var& lval,
 	else
 	{
 		code += gen_create_variable("%rbx");
-		curr_frame_.add_local(result.name, 8);
+		curr_frame_.add_local(result.name, get_type_length(result.type));
 	}
-	return code;
-}
-
-std::string CodeGen::gen_enter_proc()
-{
-	return "pushq %rbp\n"\
-		   "movq %rsp, %rbp\n";
-}
-
-std::string CodeGen::gen_exit_proc()
-{
-	std::stringstream sstream;
-	// addq $16, %rsp
-	sstream << "addq $" << curr_frame_.get_frame_length() << ", %rsp\n";
-	sstream << "popq %rbp\n"\
-		    "ret\n";
-	return sstream.str();
-}
-
-std::string CodeGen::gen_return(const Var& result)
-{
-	std::string code = "";
-	code += gen_access_arg(result, "%rbx");
-	code += "movq %rbx, %rax\n";
 	return code;
 }
 
 /*
+	生成进入过程时的代码
+*/
+std::string CodeGen::gen_enter_proc()
+{
+	return "\tpushq %rbp\n"\
+		   "\tmovq %rsp, %rbp\n";
+}
+
+/*
+	生成退出过程时的代码，要将栈退出
+*/
+std::string CodeGen::gen_exit_proc()
+{
+	std::stringstream sstream;
+	sstream << "\taddq $" << curr_frame_.get_frame_length() << ", %rsp\n";
+	sstream << "\tpopq %rbp\n"\
+		       "\tret\n";
+	return sstream.str();
+}
+
+/*
+	生成return返回值，将值赋给rax，
+*/
+std::string CodeGen::gen_return(const Var& result)
+{
+	return gen_access_arg(result, "%rax");
+}
+
+/*
  * 生成一条从内存中载入变量到寄存器的指令
- * reg_name 寄存器名称，现在只支持rbx或者rcx
+ * reg_name 寄存器名称 {"%rbx", "%rcx"}
  * offset 相对于bsp的偏移地址
  */
 std::string CodeGen::gen_load_variable(const std::string& reg_name, long offset)
 {
-	if (!is_reg_valid(reg_name))
+	if (!register_check(reg_name))
+	{
+		return "";
+	}
+	if (!frame_offset_check(reg_name, offset))
 	{
 		return "";
 	}
 	std::stringstream sstream;
-	sstream << "movq " << offset << "(%rbp), " << reg_name << "\n";
+	sstream << "\tmovq " << offset << "(%rbp), " << reg_name << "\n";
 	return sstream.str();
 }
 
@@ -306,33 +252,40 @@ std::string CodeGen::gen_load_variable(const std::string& reg_name, long offset)
  */
 std::string CodeGen::gen_create_variable(const std::string& reg_name)
 {
-	if (!is_reg_valid(reg_name))
+	if (!register_check(reg_name))
 	{
 		return "";
 	}
 	std::stringstream sstream;
-	sstream << "pushq " << reg_name << "\n";
+	sstream << "\tpushq " << reg_name << "\n";
 	return sstream.str();
 }
 
+/*
+	将变量保存在栈中
+*/
 std::string CodeGen::gen_save_variable(const std::string& reg_name, long offset)
 {
-	if (!is_reg_valid(reg_name))
+	if (!register_check(reg_name))
+	{
+		return "";
+	}
+	if (!frame_offset_check(reg_name, offset))
 	{
 		return "";
 	}
 	std::stringstream sstream;
-	sstream << "movq " << reg_name << ", " << offset << "(%rbp)\n";
+	sstream << "\tmovq " << reg_name << ", " << offset << "(%rbp)\n";
 	return sstream.str();
 }
 
 std::string CodeGen::gen_call(const Var& result, const std::string& fun_name)
 {
 	std::stringstream sstream;
-	sstream << "call " << fun_name << "\n";
-	if (result.tag != UNKNOWN)
+	sstream << "\tcall " << fun_name << "\n";
+	if (result.tag == IDENTIFIER)
 	{
-		sstream << "movq %rax, %rbx\n";
+		sstream << "\tmovq %rax, %rbx\n";
 		sstream << gen_create_variable("%rbx");
 		curr_frame_.add_local(result.name, get_type_length(result.type));
 	}
@@ -341,19 +294,27 @@ std::string CodeGen::gen_call(const Var& result, const std::string& fun_name)
 
 std::string CodeGen::gen_set_param(const Var& param)
 {
+	if (param.tag != LT_NUMBER && param.tag != IDENTIFIER)
+	{
+		std::string error_msg = "tag of param " + param.name + " must be LT_NUMBER or IDENTIFIER";
+		error(error_msg.c_str());
+		return "";
+	}
 	std::string code = "";
 	code += gen_access_arg(param, "%rbx");
-	code += "pushq %rbx\n";
+	code += "\tpushq %rbx\n";
 	curr_frame_.add_param_out(get_type_length(param.type));
 	return code;
 }
 
-bool CodeGen::is_reg_valid(const std::string& reg_name)
+bool CodeGen::register_check(const std::string& reg_name)
 {
-	if (reg_name == "%rbx" || reg_name == "%rcx")
+	if (reg_name == "%rbx" || reg_name == "%rcx" || reg_name == "%rax")
 	{
 		return true;
 	}
+	std::string error_msg = "invalid register name:" + reg_name;
+	error(error_msg.c_str());
 	return false;
 }
 
@@ -378,9 +339,15 @@ Var CodeGen::get_var(const Address& address)
 	}
 }
 
+/**
+	生成访问操作数的汇编代码，支持ID和整形常量
+	var 操作数
+	reg_name 寄存器名称 {"%rax", "%rbx", "%rcx"}
+*/
 std::string CodeGen::gen_access_arg(const Var& var, const std::string& reg_name)
 {
-	if (!is_reg_valid(reg_name))
+	std::string error_msg = "";
+	if (!register_check(reg_name))
 	{
 		return "";
 	}
@@ -388,20 +355,17 @@ std::string CodeGen::gen_access_arg(const Var& var, const std::string& reg_name)
 	if (var.tag == LT_NUMBER)
 	{
 		str_val = "$" + var.value_string;
-		return "movq " + str_val + " , " + reg_name + "\n";
+		return "\tmovq " + str_val + " , " + reg_name + "\n";
 	}
 	else if (var.tag == IDENTIFIER)
 	{
-		if (!curr_frame_.is_variable_exists(var.name))
+		if (!variable_exist_check(var.name))
 		{
 			return "";
 		}
 		long offset = curr_frame_.get_variable_offset(var.name);
-		if (offset == 0)
+		if (!frame_offset_check(var.name, offset))
 		{
-			std::stringstream sstream;
-			sstream << "var " << var.name << " offset is 0";
-			print_error(sstream.str().c_str());
 			return "";
 		}
 		return gen_load_variable(reg_name, offset);
@@ -409,18 +373,15 @@ std::string CodeGen::gen_access_arg(const Var& var, const std::string& reg_name)
 	return "";
 }
 
+/*
+	将每个参数的偏移地址存储到栈帧当中，以便后续读取。
+	因为函数开始执行之前调用过call(本质就是push rip)和push rbp，
+	所以参数的偏移起始地址为rbp+16。
+*/
 void CodeGen::parse_params()
 {
-	if (function_ == nullptr)
-	{
-		return ;
-	}
-	/*
-		将每个参数的偏移地址存储到栈帧当中，以便后续读取。
-		因为函数开始执行之前调用过call(本质就是push rip)和push rbp，
-		所以参数的偏移起始地址为rbp+16。
-	*/
-	int offset = 16;
+	assert(function_ != nullptr);
+	int offset = PARAM_OFFSET_BEGIN;
 	const std::vector<Var> params = function_->get_params();
 	for (unsigned int i = 0; i < params.size(); i++)
 	{
@@ -442,4 +403,27 @@ int CodeGen::get_type_length(const Type& type)
 		return 8;
 	}
 	return 0;
+}
+
+bool CodeGen::variable_exist_check(const std::string& var_name)
+{
+	if (!curr_frame_.is_variable_exists(var_name))
+	{
+		std::string error_msg = "var " + var_name + " not found in stackframe";
+		error(error_msg.c_str());
+		return false;
+	}
+	return true;
+}
+
+bool CodeGen::frame_offset_check(const std::string& var_name, long offset)
+{
+	if (offset >= LOCAL_OFFSET_BEGIN && offset < PARAM_OFFSET_BEGIN)
+	{
+		std::stringstream sstream;
+		sstream << "var " << var_name << " offset is " << offset << ",it can't be in [0,16)";
+		error(sstream.str().c_str());
+		return false;
+	}
+	return true;
 }
