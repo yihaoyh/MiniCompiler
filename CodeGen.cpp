@@ -4,6 +4,19 @@
 #include "Utils.h"
 
 #define VAR_LENGTH 8
+std::string CodeGen::parse_functions(std::vector<Function> functions)
+{
+	std::string code = "";
+	for (auto iter = functions.begin(); iter != functions.end(); ++iter)
+	{
+		function_ = &(*iter);
+		curr_frame_ = Frame(nullptr, iter->name, iter->get_params());
+		parse_params();
+		code += parse_function(*function_);
+	}
+	return code;
+}
+
 std::string CodeGen::parse_function(Function& fun)
 {
 	std::vector<InterInstruction> inst_list = fun.get_instructions();
@@ -15,19 +28,6 @@ std::string CodeGen::parse_function(Function& fun)
 		code += parse_instruction(*iter);
 	}
 	code += gen_exit_proc();
-	return code;
-}
-
-std::string CodeGen::parse_functions(std::vector<Function> functions)
-{
-	std::string code = "";
-	for (auto iter = functions.begin(); iter != functions.end(); ++iter)
-	{
-		function_ = &(*iter);
-		curr_frame_ = Frame(nullptr, iter->name, iter->get_params());
-		parse_params();
-		code += parse_function(*function_);
-	}
 	return code;
 }
 
@@ -415,19 +415,19 @@ void CodeGen::parse_params()
 	{
 		return ;
 	}
-	std::string code = "";
-	int offset = 8; // 因为之前执行过push rbp和mov rsp, rbp，所以偏移起始位8
+	/*
+		将每个参数的偏移地址存储到栈帧当中，以便后续读取。
+		因为函数开始执行之前调用过call(本质就是push rip)和push rbp，
+		所以参数的偏移起始地址为rbp+16。
+	*/
+	int offset = 16;
 	const std::vector<Var> params = function_->get_params();
 	for (unsigned int i = 0; i < params.size(); i++)
 	{
 		Var var = params[i];
-		int length = get_type_length(var.type);
-		if (length == 0)
-		{
-			continue;
-		}
-		offset += length;
 		curr_frame_.add_param_in(var.name, offset);
+		int length = get_type_length(var.type);
+		offset += length;
 	}
 }
 

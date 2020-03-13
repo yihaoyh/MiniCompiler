@@ -29,8 +29,8 @@ public:
 	{
 	}
 	std::string parse_functions(std::vector<Function> functions);
-	std::string parse_function(Function& fun);
 private:
+	std::string parse_function(Function& fun);
 	std::string parse_instruction(const InterInstruction& inst);
 	std::string gen_header(const std::string& fun_name);
     std::string gen_assign(const Var& lval, const Var& rval);

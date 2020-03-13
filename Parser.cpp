@@ -496,7 +496,10 @@ Var Parser::literal()
 
 void Parser::recovery()
 {
-    std::cout << "recovery wrong token " << token_look_.get_name() << std::endl;
+    std::string error_msg = "recovery wrong token ";
+    error_msg += token_look_.get_name();
+    error(error_msg.c_str());
+
 }
 
 void Parser::move_token()

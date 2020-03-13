@@ -1,5 +1,6 @@
 #include"Utils.h"
 #include<sstream>
+#include<windows.h>
 /*
 * 从文件中读取字符串
 */
@@ -27,9 +28,29 @@ bool is_blank(char ch)
 	return false;
 }
 
+/*
+	switch (current_state)
+	{
+	case KW_CHAR:
+		SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), FOREGROUND_GREEN);
+		break;
+	case TK_CINT:
+		SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), FOREGROUND_RED);
+		break;
+	default:
+		SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 7);
+		break;
+	}
+	if (current_state <= KW_SIZEOF && current_state >= KW_CHAR)
+	{
+		SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), FOREGROUND_BLUE);
+	}*/
+
 void error(const char* content)
 {
+	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), FOREGROUND_RED);
 	std::cout << content << std::endl;
+	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 7);
 }
 
 bool is_digit(char ch)
