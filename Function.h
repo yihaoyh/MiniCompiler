@@ -12,7 +12,7 @@ public:
 	Function(const std::string& fun_name, bool is_declaration, const Type& type, const std::vector<Var>& params);
 	Function();
 	void add_instruction(InterInstruction inst);
-	std::vector<InterInstruction>& get_instructions();
+	const std::vector<InterInstruction>& get_instructions();
 	const std::vector<Var> get_params();
 	void put_variable(const Var& var);
 	Var get_variable(const std::string& name);

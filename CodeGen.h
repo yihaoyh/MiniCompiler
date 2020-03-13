@@ -27,19 +27,14 @@ class CodeGen
 public:
 	CodeGen() 
 	{
-		//curr_frame_ = Frame(nullptr, std::string("main"), std::vector<Var>());
-		//frame_stack_.push_back(curr_frame_);
 	}
 	std::string parse_functions(std::vector<Function> functions);
-	std::string parse_function(std::vector<InterInstruction> insts);
+	std::string parse_function(Function& fun);
 private:
 	std::string parse_instruction(const InterInstruction& inst);
 	std::string gen_header(const std::string& fun_name);
     std::string gen_assign(const Var& lval, const Var& rval);
 	std::string gen_low_op(Operator op, const Var& result, const Var& lval, const Var& rval);
-	std::string gen_sub(const Var& result, const Var& lval, const Var& rval);
-	std::string gen_mul(const Var& result, const Var& lval, const Var& rval);
-	std::string gen_div(const Var& result, const Var& lval, const Var& rval);
 	std::string gen_enter_proc();
 	std::string gen_exit_proc();
 	std::string gen_return(const Var& result);

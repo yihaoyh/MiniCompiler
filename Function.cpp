@@ -18,7 +18,7 @@ void Function::add_instruction(InterInstruction inst)
     inst_vector_.push_back(inst);
 }
 
-std::vector<InterInstruction>& Function::get_instructions()
+const std::vector<InterInstruction>& Function::get_instructions()
 {
     return inst_vector_;
 }

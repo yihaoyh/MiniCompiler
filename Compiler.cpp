@@ -13,12 +13,6 @@ int main()
 {
 	init_keyword_table();
 	Parser parser;
-	parser.begin_parse();
+	parser.begin_parse("parser_test.txt");
 	parser.print_instructions();
 }
-
-void init()
-{
-
-}
-

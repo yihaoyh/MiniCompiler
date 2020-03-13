@@ -4,12 +4,13 @@
 #include "Utils.h"
 
 #define VAR_LENGTH 8
-std::string CodeGen::parse_function(std::vector<InterInstruction> insts)
+std::string CodeGen::parse_function(Function& fun)
 {
+	std::vector<InterInstruction> inst_list = fun.get_instructions();
 	std::string code = "";
 	code += gen_header(curr_frame_.fun_name);
 	code += gen_enter_proc();
-	for (auto iter = insts.begin(); iter != insts.end(); ++iter)
+	for (auto iter = inst_list.begin(); iter != inst_list.end(); ++iter)
 	{
 		code += parse_instruction(*iter);
 	}
@@ -25,7 +26,7 @@ std::string CodeGen::parse_functions(std::vector<Function> functions)
 		function_ = &(*iter);
 		curr_frame_ = Frame(nullptr, iter->name, iter->get_params());
 		parse_params();
-		code += parse_function(function_->get_instructions());
+		code += parse_function(*function_);
 	}
 	return code;
 }
@@ -258,21 +259,6 @@ std::string CodeGen::gen_low_op(Operator op, const Var& result, const Var& lval,
 		curr_frame_.add_local(result.name, 8);
 	}
 	return code;
-}
-
-std::string CodeGen::gen_sub(const Var& result, const Var& lval, const Var& rval)
-{
-	return std::string();
-}
-
-std::string CodeGen::gen_mul(const Var& result, const Var& lval, const Var& rval)
-{
-	return std::string();
-}
-
-std::string CodeGen::gen_div(const Var& result, const Var& lval, const Var& rval)
-{
-	return std::string();
 }
 
 std::string CodeGen::gen_enter_proc()

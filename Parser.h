@@ -10,7 +10,7 @@ class Parser
 {
 public:
 	Parser();
-	void begin_parse();
+	void begin_parse(const std::string& file_name);
 	void print_instructions();
 private:
 	/* 
@@ -109,11 +109,6 @@ private:
 		<expr>-><item> <exprtail>
 	*/
 	Var expr();
-
-	/*
-		<exprtail>-><op_low> <item> <exprtail> | SEMICOLON
-	*/
-	Var exprtail(Var *result, Var arg1);
 
 	/*
 		<item>-><factor> <itemtail>

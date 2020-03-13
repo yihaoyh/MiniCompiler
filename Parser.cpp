@@ -8,7 +8,6 @@
 #define FIRST(TAG) token_look_.tag() == TAG
 #define OR(TAG) ||token_look_.tag() == TAG
 #define TYPE_FIRST FIRST(KW_INT)OR(KW_CHAR)OR(KW_STRING)OR(KW_VOID)
-//表达式
 #define EXPR_FIRST FIRST(LPAREN)OR(LT_NUMBER)OR(LT_CHAR)OR(LT_STRING)OR(IDENTIFIER)OR(SUB)OR(MULTIPLY)
 #define STATEMENT_FIRST EXPR_FIRST OR(KW_IF)OR(KW_RETURN)
 Parser::Parser()
@@ -16,9 +15,13 @@ Parser::Parser()
     current_function_ = nullptr;
     index = -1;
 }
-void Parser::begin_parse()
+void Parser::begin_parse(const std::string& file_name)
 {
-    lexer_.load_file("parser_test.txt");
+    if (file_name.empty())
+    {
+        return;
+    }
+    lexer_.load_file(file_name.c_str());
     move_token();
     program();
 }
@@ -305,53 +308,6 @@ Var Parser::expr()
     return assign_expr();
 }
 
-/*
-    <exprtail>-><op_low> <item> <exprtail> | SEMICOLON 对应代码 "c;"," + a;", " + a + b;"
-
-    deprecated
-*/
-Var Parser::exprtail(Var* result, Var arg1)
-{
-    return Var::default_;
-    /*if (match(ASSIGN))
-    {
-        Var var = expr();
-        add_instruction(InterInstruction(*result, Operator::OP_ASSIGN, var, Var::default_));
-    }
-    else
-    {
-        move_token();
-        if (FIRST(ADD)OR(SUB))
-        {
-            Operator op = op_low();
-            move_token();
-            Var arg2 = item();
-            move_token();
-            if (FIRST(ADD)OR(SUB))
-            {
-                Var temp = sym_table_.gen_temp_var(arg1.type);
-                add_instruction(InterInstruction(temp, op, arg1, arg2));
-                back_token();
-                return exprtail(result, temp);
-            }
-            else
-            {
-                if (result == nullptr)
-                {
-                    result = &Var();
-                }
-                add_instruction(InterInstruction(*result, op, arg1, arg2));
-                back_token();
-            }
-        }
-        else
-        {
-            back_token();
-        }
-    }
-
-    return arg1;*/
-}
 
 void Parser::operator_()
 {
@@ -557,7 +513,6 @@ void Parser::move_token()
     else {
         token_look_ = token_stack_[++index];
     }
-
 }
 
 /*
@@ -630,12 +585,11 @@ Var Parser::idexpr(std::string name)
         Function fun = get_function(name);
         if (!fun.name.empty())
         {
-            // 从右往左压参数，可以支持不定长参数
+            // 从右往左压参数，可以支持不定长参数，所以不需要传参数个数
             std::cout << "function call occur : " << name << "()" << std::endl;
             var = current_function_->gen_temp_var(fun.return_type);
             InterInstruction inst = InterInstruction(var_to_address(var), Operator::OP_CALL, Address{ NAME, name }, Address());
             add_instruction(inst);
-            // 返回值用rax保存
         }
     }
     else
@@ -683,26 +637,7 @@ void Parser::put_function(Function fun)
     function_table_[fun.name] = fun;
 }
 
-//void SymTable::set_current_function(Function* function)
-//{
-//    if (function != nullptr)
-//    {
-//        current_function_ = function;
-//    }
-//}
-//
-//Function* SymTable::get_current_function()
-//{
-//    return current_function_;
-//}
-
 std::vector<Function> Parser::get_functions()
 {
-    //std::vector<Function> functions;
-    //for (auto iter = function_table_.begin(); iter != function_table_.end(); iter++)
-    //{
-    //    functions.push_back(iter->second);
-    //}
-    //return functions;
     return functions_;
 }
