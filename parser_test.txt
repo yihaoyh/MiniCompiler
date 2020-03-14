@@ -9,7 +9,7 @@ void main()
     int a = 0;
 	a = a + 1 + 2;
 	a = f(a);
-	//print();
+	print();
 }
 
 // 

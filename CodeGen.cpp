@@ -281,6 +281,10 @@ std::string CodeGen::gen_save_variable(const std::string& reg_name, long offset)
 
 std::string CodeGen::gen_call(const Var& result, const std::string& fun_name)
 {
+	if (fun_name == "print")
+	{
+		return gen_print_int(0);
+	}
 	std::stringstream sstream;
 	sstream << "\tcall " << fun_name << "\n";
 	if (result.tag == IDENTIFIER)

@@ -39,6 +39,9 @@ main:
 	pushq %rbx
 	movq -40(%rbp), %rbx
 	movq %rbx, -8(%rbp)
+	movl %ebx, %esi
+	leaq .LC0(%rip), %rdi
+	call printf@PLT
 	addq $40, %rsp
 	popq %rbp
 	ret

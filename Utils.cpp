@@ -84,9 +84,10 @@ bool is_alphabet(char ch)
 
 std::string gen_print_int(int value)
 {
+	// TODO 下面代码和push rbp似乎有冲突，会引发段错误
 	std::stringstream sstream;
-	sstream << "movl $" << value << ", %esi\n";
-	sstream << "leaq	.LC0(%rip), %rdi\n";
-	sstream << "call	printf@PLT\n";
+	sstream << "\tmovl %ebx" << ", %esi\n";
+	sstream << "\tleaq	.LC0(%rip), %rdi\n";
+	sstream << "\tcall	printf@PLT\n";
 	return std::string();
 }
