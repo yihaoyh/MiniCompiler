@@ -1,23 +1,36 @@
 #include"Utils.h"
 #include<sstream>
 #include<windows.h>
+#include<cstdio>
+
+#define BLOCK_SIZE 4096
 /*
 * 从文件中读取字符串
 */
 std::string read_string_from_file(const char* file_name)
 {
 	std::string result = "";
-	char buffer[256];
+	char buffer[BLOCK_SIZE];
 	std::fstream out_file;
 	out_file.open(file_name, std::ios::in);
 	while (!out_file.eof())
 	{
-		memset(buffer, 0, 256);
-		out_file.getline(buffer, 256, '\n');
+		memset(buffer, 0, BLOCK_SIZE);
+		out_file.getline(buffer, BLOCK_SIZE, '\n');
 		result = result + std::string(buffer) + "\n";
 	}
 	out_file.close();
 	return result;
+}
+
+bool write_string_to_file(const char* file_name, const std::string content)
+{
+	remove(file_name);
+	std::fstream out_file;
+	out_file.open(file_name, std::ios::out|std::ios::app);
+	out_file.write(content.c_str(), content.size());
+	out_file.close();
+    return true;
 }
 
 bool is_blank(char ch)

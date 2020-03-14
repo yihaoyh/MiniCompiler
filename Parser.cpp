@@ -41,7 +41,8 @@ void Parser::print_instructions()
         std::cout << "function " << fun.name << " end" << std::endl;
     }
     std::cout << "\n" << "code:\n";
-    std::cout << code_gen.parse_functions(functions);
+    std::string code = code_gen.parse_functions(functions);
+    write_string_to_file("new_code.s", code);
 }
 void Parser::program()
 {
