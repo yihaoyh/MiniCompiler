@@ -12,6 +12,9 @@ enum Tag			// 词法标签
 	KW_STRING,		// keyword string
 	KW_IF,			// keyword if
 	KW_ELSE,		// keyword else
+	KW_WHILE,       // keyword while
+	KW_DO,          // keyword do
+	KW_FOR,         // keyword for
 	KW_RETURN,		// keyword return
 	KW_VOID,        // keyword void
 	LT_NUMBER,		// 数字字面量
@@ -29,9 +32,19 @@ enum Tag			// 词法标签
 	DIVIDE,			// /
 	COMMA,			// ,
 	ASSIGN,			// =
+	LESS,			// <
+	LESS_EQUAL,     // <=
+	GREATER,        // >
+	GREATER_EQUAL,  // >=
 	EQUAL,			// ==
+	NOT_EQUAL,      // !=
+	AND,			// &&
+	OR,				// ||
+	NOT,			// !
 	SEMICOLON,		// ;
-	IDENTIFIER      // identifier
+	IDENTIFIER,     // identifier
+	BITWISE_AND,	// &
+	BITWISE_OR,		// |
 };
 
 class Token 
@@ -99,8 +112,24 @@ private:
 			return "=";
 		case EQUAL:
 			return "==";
+		case NOT_EQUAL:
+			return "!=";
 		case IDENTIFIER:
 			return "identifier";
+		case LESS:
+			return "<";
+		case LESS_EQUAL:
+			return "<=";
+		case GREATER:
+			return ">";
+		case GREATER_EQUAL:
+			return ">=";
+		case AND:
+			return "&&";
+		case OR:
+			return "||";
+		case NOT:
+			return "!";
 		default:
 			return "unknown";
 		}

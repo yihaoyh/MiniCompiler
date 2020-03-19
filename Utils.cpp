@@ -73,6 +73,13 @@ bool is_digit(char ch)
 	return false;
 }
 
+void debug(const char* content)
+{
+	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), FOREGROUND_GREEN);
+	std::cout << content << std::endl;
+	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 7);
+}
+
 bool is_alphabet(char ch)
 {
 	if ((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z'))

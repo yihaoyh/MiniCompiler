@@ -7,9 +7,13 @@ int f(int a)
 void main()
 {
     int a = 0;
+	if( a < 1 && a >= 0 || a != 10)
+	{
+		a = 2;
+	}
 	a = a + 1 + 2;
-	a = f(a);
-	print();
+	//a = f(a);
+	//print();
 }
 
 // 
@@ -17,7 +21,7 @@ void main()
 /*
 void main()
 {
-	string c;
+
 	int a = 10;
 	a = a * f();
 	if(a == 1)

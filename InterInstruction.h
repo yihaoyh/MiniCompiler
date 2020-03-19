@@ -1,5 +1,6 @@
 #pragma once
 #include<string>
+#include<vector>
 #include"Var.h"
 #include"Common.h"
 #include"Call.h"
@@ -36,6 +37,8 @@ public:
     Address arg1;
     Address arg2;
     Call call;
+    unsigned int index;  // 指令序号
+    unsigned int next_index; // 下一个指令的序号
 };
 
 Address var_to_address(const Var& var);

@@ -6,6 +6,7 @@
 #include"Var.h"
 #include"SymTable.h"
 #include"Function.h"
+#include"BoolExpr.h"
 class Parser
 {
 public:
@@ -100,6 +101,17 @@ private:
 	*/
 	void assign_tail(Var var);
 
+	Var or_expr();
+
+	Var or_tail(Var& lval);
+
+	Var and_expr();
+
+	Var and_tail(Var& lval);
+
+	Var compare_expr();
+
+	Var compare_tail(Var &lval);
 	/*
 		<localdef>-><type> <defdata> <deflist>
 	*/
@@ -189,6 +201,8 @@ private:
 
 	Var alo_tail(const Var& var);
 
+	//BoolExpr bool_expr();
+
 	bool match(const Tag& tag);
 
 	// ²ÎÊý´«µÝ
@@ -197,9 +211,11 @@ private:
 	Function get_function(std::string);
 
 	void put_function(Function);
-	//void set_current_function(Function*);
-	//Function* get_current_function();
 	std::vector<Function> get_functions();
+
+	Var equal_expr();
+
+	Var equal_tail(const Var& var);
 
 	Token token_look_;
 	Lexer lexer_;

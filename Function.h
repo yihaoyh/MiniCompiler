@@ -11,12 +11,14 @@ class Function
 public:
 	Function(const std::string& fun_name, bool is_declaration, const Type& type, const std::vector<Var>& params);
 	Function();
-	void add_instruction(InterInstruction inst);
+    unsigned int add_instruction(InterInstruction inst);
+	InterInstruction& get_instruction(unsigned int index);
 	const std::vector<InterInstruction>& get_instructions();
 	const std::vector<Var> get_params();
 	void put_variable(const Var& var);
 	Var get_variable(const std::string& name);
 	Var gen_temp_var(const Type type);
+	std::string gen_label();
 
 	bool is_declaration;  // true表示声明，false表示定义
 	std::string name; // 函数名称
@@ -26,6 +28,6 @@ private:
 	SymTable sym_table;
 	std::vector<Var> params_;
 	std::vector<InterInstruction> inst_vector_;
-	//SymTable sym_table_;
+	unsigned int label_index_ = 0;
 };
 

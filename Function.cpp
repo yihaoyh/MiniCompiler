@@ -13,9 +13,18 @@ Function::Function() : name{ "" }, is_declaration{ "false" }
     return_type = Type::UNKNOWN;
 }
 
-void Function::add_instruction(InterInstruction inst)
+/*
+ 返回指令的标号
+*/
+unsigned int Function::add_instruction(InterInstruction inst)
 {
     inst_vector_.push_back(inst);
+    return inst_vector_.size() - 1;
+}
+
+InterInstruction& Function::get_instruction(unsigned int index)
+{
+    return inst_vector_[index];
 }
 
 const std::vector<InterInstruction>& Function::get_instructions()
@@ -43,6 +52,14 @@ Var Function::gen_temp_var(const Type type)
     Var var  = sym_table.gen_temp_var(type);
     put_variable(var);
     return var;
+}
+
+std::string Function::gen_label()
+{
+    std::stringstream sstream;
+    sstream << "L_" << label_index_++;
+    return sstream.str();
+
 }
 
 SymTable* Function::get_sym_table()

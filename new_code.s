@@ -22,6 +22,8 @@ main:
 	movq %rsp, %rbp
 	movq $0 , %rbx
 	pushq %rbx
+	movq $2 , %rbx
+	movq %rbx, -8(%rbp)
 	movq -8(%rbp), %rbx
 	movq $1 , %rcx
 	addq %rcx, %rbx
@@ -32,16 +34,6 @@ main:
 	pushq %rbx
 	movq -24(%rbp), %rbx
 	movq %rbx, -8(%rbp)
-	movq -8(%rbp), %rbx
-	pushq %rbx
-	call f
-	movq %rax, %rbx
-	pushq %rbx
-	movq -40(%rbp), %rbx
-	movq %rbx, -8(%rbp)
-	movl %ebx, %esi
-	leaq .LC0(%rip), %rdi
-	call printf@PLT
-	addq $40, %rsp
+	addq $24, %rsp
 	popq %rbp
 	ret

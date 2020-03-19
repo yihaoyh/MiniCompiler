@@ -9,7 +9,8 @@
 #define OR(TAG) ||token_look_.tag() == TAG
 #define TYPE_FIRST FIRST(KW_INT)OR(KW_CHAR)OR(KW_STRING)OR(KW_VOID)
 #define EXPR_FIRST FIRST(LPAREN)OR(LT_NUMBER)OR(LT_CHAR)OR(LT_STRING)OR(IDENTIFIER)OR(SUB)OR(MULTIPLY)
-#define STATEMENT_FIRST EXPR_FIRST OR(KW_IF)OR(KW_RETURN)
+#define STATEMENT_FIRST EXPR_FIRST OR(KW_IF)OR(KW_RETURN)OR(KW_WHILE)
+#define COMPARE_FIRST FIRST(LESS)OR(LESS_EQUAL)OR(EQUAL)OR(GREATER)OR(GREATER_EQUAL)
 Parser::Parser()
 {
     current_function_ = nullptr;
@@ -147,10 +148,6 @@ void Parser::defdata(const Type& type)
         result.type = type;
         put_variable(result);
         Var arg1 = varrdef(result);
-        //put_variable(arg1);
-
-        //Operator op = Operator::OP_ASSIGN;
-        //add_instruction(InterInstruction(result, op, arg1, Var::default_));
     }
 }
 
@@ -189,8 +186,8 @@ void Parser::block()
     {
         move_token();
         subprogram();
-        move_token();
-        if (FIRST(RBRACES))
+        //move_token();
+        if (match(RBRACES))
         {
             return;
         }
@@ -223,14 +220,42 @@ void Parser::subprogram()
 //<expr> <expr> SEMICOLON | KW_RETURN <expr> SEMICOLON
 void Parser::statement()
 {
-    if (FIRST(KW_RETURN))
+    if (match(KW_RETURN))
     {
-        move_token();
         Var result = expr();
-        if (FIRST(SEMICOLON))
+        if (match(SEMICOLON))
         {
             add_instruction(InterInstruction(Address(), Operator::OP_RETURN, var_to_address(result), Address()));
             return;
+        }
+        else
+        {
+            recovery();
+        }
+    }
+    else if (match(KW_IF))
+    {
+        if (match(LPAREN))
+        {
+            Var result = expr();
+            // 生成一个为假时的跳转指令，arg1表示要判断真假的变量，arg2表示跳转目标标号
+            InterInstruction inst = InterInstruction(Address(), Operator::OP_FALSE_JUMP, Address{NAME, result.name}, Address());
+            auto index = current_function_->add_instruction(inst);
+            InterInstruction ref_inst = current_function_->get_instruction(index);
+            if (match(RPAREN))
+            {
+                block();
+                // 如果if表达式为false，则直接跳转到block之后，这里插入一个新标签，并且将标签回填至
+                std::string new_label = current_function_->gen_label();
+                Address addr_label = Address{LITERAL_STRING, new_label};
+                InterInstruction inst = InterInstruction(Address(), Operator::OP_NEW_LABEL, addr_label, Address());
+                current_function_->add_instruction(inst);
+                ref_inst.arg2 = addr_label;
+            }
+            else
+            {
+                recovery();
+            }
         }
         else
         {
@@ -257,7 +282,8 @@ void Parser::statement()
  */
 Var Parser::assign_expr()
 {
-    Var lvalue = alo_expr();
+    Var lvalue = or_expr();
+    //Var lvalue = alo_expr();
     assign_tail(lvalue);
     return lvalue;
 }
@@ -281,6 +307,52 @@ void Parser::assign_tail(Var lvalue)
         }
         add_instruction(InterInstruction(var_to_address(lvalue), Operator::OP_ASSIGN, var_to_address(rvalue), Address()));
     }
+}
+Var Parser::or_expr()
+{
+    Var lvalue = and_expr();
+    return or_tail(lvalue);
+}
+Var Parser::or_tail(Var& lval)
+{
+    if (match(OR)) 
+    {
+        Var arg1 = and_expr();
+       return or_tail(lval);
+    }
+    return lval;
+}
+Var Parser::and_expr()
+{
+    Var lval = equal_expr();
+    return and_tail(lval);
+}
+Var Parser::and_tail(Var& lval)
+{
+    if (match(AND))
+    {
+        Var arg1 = equal_expr();
+        return and_tail(lval);
+    }
+    return lval;
+}
+
+// 关系运算表达式
+Var Parser::compare_expr()
+{
+    Var lval = alo_expr();
+    return compare_tail(lval);
+}
+Var Parser::compare_tail(Var& lval)
+{
+    if (COMPARE_FIRST) 
+    {
+        move_token();
+        Var var = alo_expr();
+        debug("a compare expr occur\n");
+        // 生成关系运算表达式
+    }
+    return lval;
 }
 // <localdef>-><type> <defdata> <deflist>
 void Parser::localdef()
@@ -333,6 +405,10 @@ Operator Parser::op_low()
     recovery();
     return Operator::OP_INVALID;
 }
+
+/*
+算术表达式
+*/
 Var Parser::alo_expr()
 {
     Var var = item();
@@ -358,6 +434,10 @@ Var Parser::alo_tail(const Var& arg1)
     }
     return arg1;
 }
+/*BoolExpr Parser::bool_expr
+{
+    return BoolExpr();
+}*/
 bool Parser::match(const Tag& tag)
 {
     if (token_look_.tag() == tag)
@@ -565,7 +645,6 @@ void Parser::funtail(const Type& type, std::string fun_name, const std::vector<V
         block();
         current_function_ = nullptr;
     }
-    move_token();
 }
 
 /*
@@ -644,4 +723,21 @@ void Parser::put_function(Function fun)
 std::vector<Function> Parser::get_functions()
 {
     return functions_;
+}
+
+Var Parser::equal_expr()
+{
+    Var lval = compare_expr();
+    return equal_tail(lval);
+}
+
+Var Parser::equal_tail(const Var& var)
+{
+    if (FIRST(EQUAL)OR(NOT_EQUAL)) 
+    {
+        move_token();
+        Var lval = compare_expr();
+        return equal_tail(lval);
+    }
+    return var;
 }

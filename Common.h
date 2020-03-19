@@ -13,7 +13,9 @@ enum class Operator
 	OP_DIV, // /
 	OP_CALL, // call 指令
 	OP_SET_PARAM, // 设置参数
-	OP_RETURN // 返回
+	OP_RETURN, // 返回
+	OP_NEW_LABEL, // 创建一个新的标号
+	OP_FALSE_JUMP, 
 };
 
 void print_error(const char* message);
