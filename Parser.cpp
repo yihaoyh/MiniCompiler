@@ -202,7 +202,6 @@ Statement Parser::block()
 // <subprogram>-><localdef> <subprogram> | <statement> <subprogram> | ε
 Statement Parser::subprogram()
 {
-
     if (FIRST(END_OF_FILE))
     {
         return Statement();
@@ -214,7 +213,6 @@ Statement Parser::subprogram()
     }
     else if (STATEMENT_FIRST)
     {
-        // TODO 这里的处理有些不对
         /*
             L -> S M L1
             backpatch(S.nextlist, M.instr)
@@ -223,12 +221,15 @@ Statement Parser::subprogram()
         Statement l;
         Statement s = statement();
         instr_index m = current_function_->get_next_instruction();
-        //BoolExpr::back_patch_list(*current_function_, s.next_list, m);
+        BoolExpr::back_patch_list(*current_function_, s.next_list, m);
         Statement l1 = subprogram();
-        l.next_list = l1.next_list;
-        //l.next_list = l1.next_list;
+        if (!l1.next_list.empty())
+        {
+            l.next_list = l1.next_list;
+        }
         return l;
     }
+
     return Statement();
 }
 
