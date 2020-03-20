@@ -13,9 +13,16 @@ Var SymTable::get_variable(std::string name)
 	return Var::default_;
 }
 
+/*
 void SymTable::add_instruction(InterInstruction inst)
 {
 	inst_vector.push_back(inst);
+}
+*/
+
+unsigned int SymTable::get_next_instruction()
+{
+	return inst_vector.size();
 }
 
 Var SymTable::gen_temp_var(Type type)

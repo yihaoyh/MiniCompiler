@@ -23,13 +23,24 @@ struct Address_
 };
 typedef Address_ Address;
 
+enum class Inst_Type
+{
+    NORMAL,
+    IF_JUMP,
+    IF_FALSE_JUMP,
+    JUMP
+};
+
 /*
  * 用四元式表示中间指令
  */
 class InterInstruction
 {
 public:
-    InterInstruction(Address result, Operator op, Address arg1, Address arg2);
+    InterInstruction(const Address result, Operator op, Address arg1, Address arg2);
+    static InterInstruction gen_if_jump(Operator op, Address arg1, Address arg2);
+    static InterInstruction gen_if_false_jump(Operator op, Address arg1, Address arg2);
+    static InterInstruction gen_jump();
     std::string to_string();
     //InterInstruction(Call call);
     Address result;
@@ -37,8 +48,11 @@ public:
     Address arg1;
     Address arg2;
     Call call;
-    unsigned int index;  // 指令序号
-    unsigned int next_index; // 下一个指令的序号
+    unsigned int index = 0;  // 指令序号
+    std::vector<unsigned int> next_list;
+    //unsigned int next_index = 0; // 下一个指令的序号
+    Inst_Type type;
+    virtual ~InterInstruction() {};
 };
 
 Address var_to_address(const Var& var);

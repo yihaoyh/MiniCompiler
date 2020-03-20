@@ -11,10 +11,11 @@ class Function
 public:
 	Function(const std::string& fun_name, bool is_declaration, const Type& type, const std::vector<Var>& params);
 	Function();
-    unsigned int add_instruction(InterInstruction inst);
+    unsigned int add_instruction(InterInstruction& inst);
 	InterInstruction& get_instruction(unsigned int index);
 	const std::vector<InterInstruction>& get_instructions();
 	const std::vector<Var> get_params();
+	unsigned int get_next_instruction();
 	void put_variable(const Var& var);
 	Var get_variable(const std::string& name);
 	Var gen_temp_var(const Type type);

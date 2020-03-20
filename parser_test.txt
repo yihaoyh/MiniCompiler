@@ -7,11 +7,11 @@ int f(int a)
 void main()
 {
     int a = 0;
-	if( a < 1 && a >= 0 || a != 10)
+	if( a < 1 )
 	{
 		a = 2;
 	}
-	a = a + 1 + 2;
+	//a = a + 1 + 2;
 	//a = f(a);
 	//print();
 }

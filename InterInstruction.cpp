@@ -3,6 +3,7 @@
 #include"Utils.h"
 InterInstruction::InterInstruction(Address result, Operator op, Address arg1, Address arg2) :result{ result }, op{ op }, arg1{ arg1 }, arg2{ arg2 }
 {
+    type = Inst_Type::NORMAL;
 }
 
 std::string InterInstruction::to_string()
@@ -69,4 +70,19 @@ Address var_to_address(const Var& var)
         return Address{ LITERAL_NUMBER, var.value_string };
     }
     return Address{ UNKNOWN, "" };
+}
+
+InterInstruction InterInstruction::gen_if_jump(Operator op, Address arg1, Address arg2)
+{
+    return InterInstruction(Address(), op, arg1, arg2);
+}
+
+InterInstruction InterInstruction::gen_if_false_jump(Operator op, Address arg1, Address arg2)
+{
+    return InterInstruction(Address(), op, arg1, arg2);
+}
+
+InterInstruction InterInstruction::gen_jump()
+{
+    return InterInstruction(Address(), Operator::OP_JUMP, Address(), Address());
 }

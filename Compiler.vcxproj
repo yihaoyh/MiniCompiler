@@ -158,6 +158,7 @@
     <ClCompile Include="Lexer.cpp" />
     <ClCompile Include="Param.cpp" />
     <ClCompile Include="Parser.cpp" />
+    <ClCompile Include="Statement.cpp" />
     <ClCompile Include="SymTable.cpp" />
     <ClCompile Include="Type.cpp" />
     <ClCompile Include="Utils.cpp" />
@@ -175,6 +176,7 @@
     <ClInclude Include="Param.h" />
     <ClInclude Include="Parser.h" />
     <ClInclude Include="resource.h" />
+    <ClInclude Include="Statement.h" />
     <ClInclude Include="SymTable.h" />
     <ClInclude Include="Type.h" />
     <ClInclude Include="Utils.h" />

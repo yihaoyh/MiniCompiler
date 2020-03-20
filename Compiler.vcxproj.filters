@@ -57,6 +57,12 @@
     <ClCompile Include="Type.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="BoolExpr.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="Statement.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Lexer.h">
@@ -99,6 +105,12 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="Type.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="BoolExpr.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Statement.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

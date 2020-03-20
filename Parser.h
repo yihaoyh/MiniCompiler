@@ -7,6 +7,7 @@
 #include"SymTable.h"
 #include"Function.h"
 #include"BoolExpr.h"
+#include"Statement.h"
 class Parser
 {
 public:
@@ -78,18 +79,18 @@ private:
 	/*
 		<block>->LBRACES <subprogram> RBRACES
 	*/
-	void block();
+	Statement block();
 
 	/*
 		block 由局部变量定义或者语句组成或者终结符组成
 		<subprogram>-><localdef> <subprogram> | <statement> <subprogram> | ε
 	*/
-	void subprogram();
+	Statement subprogram();
 
 	/*
 		<statement>-><assign> SEMICOLON | KW_RETURN <expr> SEMICOLON | ID ( ) SEMICOLON
 	*/
-	void statement();
+	Statement statement();
 
 	/*
 		<assign>-><item><assigntail> | <expr>
@@ -101,17 +102,17 @@ private:
 	*/
 	void assign_tail(Var var);
 
-	Var or_expr();
+	BoolExpr or_expr();
 
-	Var or_tail(Var& lval);
+	BoolExpr or_tail(BoolExpr& expr);
 
-	Var and_expr();
+	BoolExpr and_expr();
 
-	Var and_tail(Var& lval);
+	BoolExpr and_tail(BoolExpr &expr);
 
-	Var compare_expr();
+	BoolExpr compare_expr();
 
-	Var compare_tail(Var &lval);
+	BoolExpr compare_tail(Var &lval, BoolExpr& expr);
 	/*
 		<localdef>-><type> <defdata> <deflist>
 	*/
@@ -175,7 +176,7 @@ private:
 
 	void put_variable(Var var);
 
-	void add_instruction(InterInstruction instrunction);
+	instr_index add_instruction(InterInstruction instrunction);
 	
 	/*
 		往后移动一个token
@@ -197,6 +198,9 @@ private:
 	*/
 	Operator op_low();
 
+	Operator op_compare();
+
+	// 运算表达式
 	Var alo_expr();
 
 	Var alo_tail(const Var& var);
@@ -211,11 +215,10 @@ private:
 	Function get_function(std::string);
 
 	void put_function(Function);
+
 	std::vector<Function> get_functions();
 
-	Var equal_expr();
-
-	Var equal_tail(const Var& var);
+	std::vector<instr_index> merge(std::vector<instr_index>list1, std::vector<instr_index>list2);
 
 	Token token_look_;
 	Lexer lexer_;

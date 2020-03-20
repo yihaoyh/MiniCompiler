@@ -16,10 +16,11 @@ Function::Function() : name{ "" }, is_declaration{ "false" }
 /*
  返回指令的标号
 */
-unsigned int Function::add_instruction(InterInstruction inst)
+unsigned int Function::add_instruction(InterInstruction& inst)
 {
     inst_vector_.push_back(inst);
-    return inst_vector_.size() - 1;
+    inst.index = inst_vector_.size() - 1;
+    return inst.index;
 }
 
 InterInstruction& Function::get_instruction(unsigned int index)
@@ -35,6 +36,11 @@ const std::vector<InterInstruction>& Function::get_instructions()
 const std::vector<Var> Function::get_params()
 {
     return params_;
+}
+
+unsigned int Function::get_next_instruction()
+{
+    return inst_vector_.size();
 }
 
 void Function::put_variable(const Var& var)

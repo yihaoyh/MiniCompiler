@@ -10,7 +10,7 @@
 #define TYPE_FIRST FIRST(KW_INT)OR(KW_CHAR)OR(KW_STRING)OR(KW_VOID)
 #define EXPR_FIRST FIRST(LPAREN)OR(LT_NUMBER)OR(LT_CHAR)OR(LT_STRING)OR(IDENTIFIER)OR(SUB)OR(MULTIPLY)
 #define STATEMENT_FIRST EXPR_FIRST OR(KW_IF)OR(KW_RETURN)OR(KW_WHILE)
-#define COMPARE_FIRST FIRST(LESS)OR(LESS_EQUAL)OR(EQUAL)OR(GREATER)OR(GREATER_EQUAL)
+#define COMPARE_FIRST FIRST(LESS)OR(LESS_EQUAL)OR(EQUAL)OR(NOT_EQUAL)OR(GREATER)OR(GREATER_EQUAL)
 Parser::Parser()
 {
     current_function_ = nullptr;
@@ -180,53 +180,70 @@ void Parser::para(std::vector<Var>& params)
     }
 }
 
-void Parser::block()
+Statement Parser::block()
 {
+    Statement s;
     if (FIRST(LBRACES))
     {
         move_token();
-        subprogram();
-        //move_token();
+        s = subprogram();
         if (match(RBRACES))
         {
-            return;
+            return s;
         }
         else
         {
             recovery();
         }
     }
+    return s;
 }
 
-void Parser::subprogram()
+// <subprogram>-><localdef> <subprogram> | <statement> <subprogram> | ε
+Statement Parser::subprogram()
 {
-    // <subprogram>-><localdef> <subprogram> | <statement> <subprogram> | ε
+
     if (FIRST(END_OF_FILE))
     {
-        return;
+        return Statement();
     }
     else if (TYPE_FIRST)
     {
         localdef();
-        subprogram();
+        return subprogram();
     }
     else if (STATEMENT_FIRST)
     {
-        statement();
-        subprogram();
+        // TODO 这里的处理有些不对
+        /*
+            L -> S M L1
+            backpatch(S.nextlist, M.instr)
+            L.nextlist = L1.nextlist
+        */
+        Statement l;
+        Statement s = statement();
+        instr_index m = current_function_->get_next_instruction();
+        //BoolExpr::back_patch_list(*current_function_, s.next_list, m);
+        Statement l1 = subprogram();
+        l.next_list = l1.next_list;
+        //l.next_list = l1.next_list;
+        return l;
     }
+    return Statement();
 }
 
 //<expr> <expr> SEMICOLON | KW_RETURN <expr> SEMICOLON
-void Parser::statement()
+Statement Parser::statement()
 {
+    Statement s;
     if (match(KW_RETURN))
     {
         Var result = expr();
         if (match(SEMICOLON))
         {
             add_instruction(InterInstruction(Address(), Operator::OP_RETURN, var_to_address(result), Address()));
-            return;
+            s.next_list.clear();
+            return s;
         }
         else
         {
@@ -235,22 +252,20 @@ void Parser::statement()
     }
     else if (match(KW_IF))
     {
+        /*
+            S->if (B) M S1
+            backpatch(B.truelist, M.instr)
+            s.nextlist = merge(B.falselist, S1.nextlist)
+        */
         if (match(LPAREN))
         {
-            Var result = expr();
-            // 生成一个为假时的跳转指令，arg1表示要判断真假的变量，arg2表示跳转目标标号
-            InterInstruction inst = InterInstruction(Address(), Operator::OP_FALSE_JUMP, Address{NAME, result.name}, Address());
-            auto index = current_function_->add_instruction(inst);
-            InterInstruction ref_inst = current_function_->get_instruction(index);
+            BoolExpr b = or_expr();
             if (match(RPAREN))
             {
-                block();
-                // 如果if表达式为false，则直接跳转到block之后，这里插入一个新标签，并且将标签回填至
-                std::string new_label = current_function_->gen_label();
-                Address addr_label = Address{LITERAL_STRING, new_label};
-                InterInstruction inst = InterInstruction(Address(), Operator::OP_NEW_LABEL, addr_label, Address());
-                current_function_->add_instruction(inst);
-                ref_inst.arg2 = addr_label;
+                unsigned int m = current_function_->get_next_instruction();
+                b.back_patch(*current_function_, 1, m);
+                Statement s1 = block();
+                s.next_list = merge(b.false_list, s1.next_list);
             }
             else
             {
@@ -268,13 +283,15 @@ void Parser::statement()
         put_variable(var);
         if (match(SEMICOLON))
         {
-            return;
+            s.next_list.clear();
+            return s;
         }
         else
         {
             recovery();
         }
     }
+    return Statement();
 }
 
 /*
@@ -282,8 +299,7 @@ void Parser::statement()
  */
 Var Parser::assign_expr()
 {
-    Var lvalue = or_expr();
-    //Var lvalue = alo_expr();
+    Var lvalue = alo_expr();
     assign_tail(lvalue);
     return lvalue;
 }
@@ -308,52 +324,90 @@ void Parser::assign_tail(Var lvalue)
         add_instruction(InterInstruction(var_to_address(lvalue), Operator::OP_ASSIGN, var_to_address(rvalue), Address()));
     }
 }
-Var Parser::or_expr()
+
+
+BoolExpr Parser::or_expr()
 {
-    Var lvalue = and_expr();
-    return or_tail(lvalue);
+    BoolExpr expr = and_expr();
+    return or_tail(expr);
 }
-Var Parser::or_tail(Var& lval)
+BoolExpr Parser::or_tail(BoolExpr& b1)
 {
-    if (match(OR)) 
+    if (match(OR))
     {
-        Var arg1 = and_expr();
-       return or_tail(lval);
+        /*
+            B -> B1 || M B2
+            backpatch(B1.falselist, M.instr);
+            B.truelist = merge(B1.truelist, B2.truelist);
+            B.falselist = B2.falselist;
+        */
+        unsigned int M = current_function_->get_next_instruction();
+        b1.back_patch(*current_function_, 0, M);
+        BoolExpr b, b2;
+        b2 = and_expr();
+        b.true_list = merge(b1.true_list, b2.true_list);
+        b.false_list = b2.false_list;
+        return b;
     }
-    return lval;
+    return b1;
 }
-Var Parser::and_expr()
+
+
+BoolExpr Parser::and_expr()
 {
-    Var lval = equal_expr();
-    return and_tail(lval);
+    BoolExpr b1 = compare_expr();
+    return and_tail(b1);
 }
-Var Parser::and_tail(Var& lval)
+
+
+BoolExpr Parser::and_tail(BoolExpr& b1)
 {
     if (match(AND))
     {
-        Var arg1 = equal_expr();
-        return and_tail(lval);
+        /*
+            对应龙书的布尔表达式回填逻辑
+            B -> B1 && M B2
+            backpatch(B1.truelist, M.instr)
+            B.truelist = B2.truelist
+            B.falselist = merge(B1.falselist, B2.falselist)
+        */
+        unsigned int M = current_function_->get_next_instruction();
+        b1.back_patch(*current_function_, 1, M);
+        BoolExpr b, b2;
+        b2 = compare_expr();
+        b.true_list = b2.true_list;
+        b.false_list = merge(b1.false_list, b2.false_list);
+        return b;
     }
-    return lval;
+    return b1;
 }
 
 // 关系运算表达式
-Var Parser::compare_expr()
+BoolExpr Parser::compare_expr()
 {
+    BoolExpr expr;
     Var lval = alo_expr();
-    return compare_tail(lval);
+    return compare_tail(lval, expr);
 }
-Var Parser::compare_tail(Var& lval)
+BoolExpr Parser::compare_tail(Var& lval, BoolExpr& expr)
 {
-    if (COMPARE_FIRST) 
+    if (COMPARE_FIRST)
     {
+        Operator op = op_compare();
         move_token();
-        Var var = alo_expr();
+        Var rval = alo_expr();
         debug("a compare expr occur\n");
         // 生成关系运算表达式
+        InterInstruction if_jump = InterInstruction::gen_if_jump(op, var_to_address(lval), var_to_address(rval));
+        if_jump.index = add_instruction(if_jump);
+        InterInstruction jump = InterInstruction::gen_jump();
+        jump.index = add_instruction(jump);
+        expr.true_list.push_back(if_jump.index);
+        expr.false_list.push_back(jump.index);
     }
-    return lval;
+    return expr;
 }
+
 // <localdef>-><type> <defdata> <deflist>
 void Parser::localdef()
 {
@@ -381,7 +435,6 @@ Var Parser::expr()
     return assign_expr();
 }
 
-
 void Parser::operator_()
 {
 }
@@ -400,6 +453,30 @@ Operator Parser::op_low()
             return Operator::OP_ADD;
         case SUB:
             return Operator::OP_SUB;
+        }
+    }
+    recovery();
+    return Operator::OP_INVALID;
+}
+
+Operator Parser::op_compare()
+{
+    if (COMPARE_FIRST)
+    {
+        switch (token_look_.tag())
+        {
+        case LESS:
+            return Operator::OP_LESS;
+        case LESS_EQUAL:
+            return Operator::OP_LESS_EQUAL;
+        case EQUAL:
+            return Operator::OP_EQUAL;
+        case NOT_EQUAL:
+            return Operator::OP_NOT_EQUAL;
+        case GREATER:
+            return Operator::OP_GREATER;
+        case GREATER_EQUAL:
+            return Operator::OP_GREATER_EQUAL;
         }
     }
     recovery();
@@ -689,10 +766,10 @@ void Parser::put_variable(Var var)
     current_function_->put_variable(var);
 }
 
-void Parser::add_instruction(InterInstruction instrunction)
+instr_index Parser::add_instruction(InterInstruction instrunction)
 {
     assert(current_function_ != nullptr);
-    current_function_->add_instruction(instrunction);
+    return current_function_->add_instruction(instrunction);
 }
 
 /*
@@ -725,19 +802,9 @@ std::vector<Function> Parser::get_functions()
     return functions_;
 }
 
-Var Parser::equal_expr()
+std::vector<instr_index> Parser::merge(std::vector<instr_index> list1, std::vector<instr_index> list2)
 {
-    Var lval = compare_expr();
-    return equal_tail(lval);
-}
-
-Var Parser::equal_tail(const Var& var)
-{
-    if (FIRST(EQUAL)OR(NOT_EQUAL)) 
-    {
-        move_token();
-        Var lval = compare_expr();
-        return equal_tail(lval);
-    }
-    return var;
+    std::vector<instr_index>result = std::vector<instr_index>(list1);
+    result.insert(result.end(), list2.begin(), list2.end());
+    return result;
 }
