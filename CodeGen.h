@@ -43,25 +43,28 @@ private:
 	std::string gen_save_variable(const std::string& reg_name, long offset);
 	std::string gen_call(const Var& result, const std::string& fun_name);
 	std::string gen_set_param(const Var& param);
+	std::string gen_if_jump(Operator op, const Var& result, const Var& lval, const Var& rval);
+	std::string gen_if_false_jump(Operator op, const Var& result, const Var& lval, const Var& rval);
+	std::string gen_jump(const Var& result);
+
 	bool register_check(const std::string& reg_name);
 	bool frame_offset_check(const std::string& var_name, long offset);
 	bool variable_exist_check(const std::string& var_name);
 	Var get_var(const Address& address);
 	
-	/**
+	/*
 	生成访问操作数的代码，支持ID和整形常量
 	@param[in] var 操作数
 	reg_name
 	*/	
 	std::string gen_access_arg(const Var& var, const std::string& reg_name);
+
+	
 	void parse_params();
 	int get_type_length(const Type& type);
 
-	//std::vector<Frame> frame_stack_;
 	Frame curr_frame_;
 
-	// TODO 符号表
-	//SymTable* symtable_;
 	Function* function_ = nullptr;
 };
 

@@ -7,6 +7,10 @@
 #define VAR_LENGTH 8
 #define PARAM_OFFSET_BEGIN 16
 #define LOCAL_OFFSET_BEGIN 0
+const std::string RAX = "%rax";
+const std::string RBX = "%rbx";
+const std::string RCX = "%rcx";
+
 std::string CodeGen::parse_functions(std::vector<Function> functions)
 {
 	std::string code = "";
@@ -40,6 +44,22 @@ std::string CodeGen::parse_instruction(const InterInstruction& inst)
 	Var arg1 = get_var(inst.arg1);
 	Var arg2 = get_var(inst.arg2);
 	std::string code = "";
+	if (inst.type == Inst_Type::IF_JUMP)
+	{
+		gen_if_jump(inst.op, result, arg1, arg2);
+		return;
+	}
+	else if (inst.type == Inst_Type::IF_FALSE_JUMP)
+	{
+		gen_if_false_jump(inst.op, result, arg1, arg2);
+		return;
+	}
+	else if (inst.type == Inst_Type::JUMP)
+	{
+		gen_jump(result);
+		return;
+	}
+	// normal
 	switch (inst.op)
 	{
 	case Operator::OP_ADD:
@@ -72,6 +92,8 @@ std::string CodeGen::parse_instruction(const InterInstruction& inst)
 		return code;
 	case Operator::OP_RETURN:
 		return gen_return(arg1);
+	case Operator::OP_IF_JUMP:
+		return gen_if_jump(inst.op, result, arg1, arg2);
 	default:
 		return "";
 	}
@@ -121,7 +143,7 @@ std::string CodeGen::gen_assign(const Var& lval, const Var& rval)
 	{
 		return "";
 	}
-	code += gen_access_arg(rval, "%rbx");
+	code += gen_access_arg(rval, RBX);
 	if (curr_frame_.is_variable_exists(lval.name))
 	{
 		long offset = curr_frame_.get_variable_offset(lval.name);
@@ -129,11 +151,11 @@ std::string CodeGen::gen_assign(const Var& lval, const Var& rval)
 		{
 			return "";
 		}
-		code += gen_save_variable("%rbx", offset);
+		code += gen_save_variable(RBX, offset);
 	}
 	else
 	{
-		code += gen_create_variable("%rbx");
+		code += gen_create_variable(RBX);
 		curr_frame_.add_local(lval.name, get_type_length(lval.type));
 	}
 	return code;
@@ -167,8 +189,8 @@ std::string CodeGen::gen_low_op(Operator op, const Var& result, const Var& lval,
 		error("result must be identifier");
 		return "";
 	}
-	code += gen_access_arg(lval, "%rbx");
-	code += gen_access_arg(rval, "%rcx");
+	code += gen_access_arg(lval, RBX);
+	code += gen_access_arg(rval, RCX);
 	if (op == Operator::OP_ADD)
 	{
 		str_op = "\taddq";
@@ -188,11 +210,11 @@ std::string CodeGen::gen_low_op(Operator op, const Var& result, const Var& lval,
 			print_error(sstream.str().c_str());
 			return "";
 		}
-		code += gen_save_variable("%rbx", offset);
+		code += gen_save_variable(RBX, offset);
 	}
 	else
 	{
-		code += gen_create_variable("%rbx");
+		code += gen_create_variable(RBX);
 		curr_frame_.add_local(result.name, get_type_length(result.type));
 	}
 	return code;
@@ -224,7 +246,7 @@ std::string CodeGen::gen_exit_proc()
 */
 std::string CodeGen::gen_return(const Var& result)
 {
-	return gen_access_arg(result, "%rax");
+	return gen_access_arg(result, RAX);
 }
 
 /*
@@ -290,7 +312,7 @@ std::string CodeGen::gen_call(const Var& result, const std::string& fun_name)
 	if (result.tag == IDENTIFIER)
 	{
 		sstream << "\tmovq %rax, %rbx\n";
-		sstream << gen_create_variable("%rbx");
+		sstream << gen_create_variable(RBX);
 		curr_frame_.add_local(result.name, get_type_length(result.type));
 	}
 	return sstream.str();
@@ -305,15 +327,119 @@ std::string CodeGen::gen_set_param(const Var& param)
 		return "";
 	}
 	std::string code = "";
-	code += gen_access_arg(param, "%rbx");
+	code += gen_access_arg(param, RBX);
 	code += "\tpushq %rbx\n";
 	curr_frame_.add_param_out(get_type_length(param.type));
 	return code;
 }
 
+/*
+	生成语义为if arg1 op arg2 goto result的语句
+*/
+std::string CodeGen::gen_if_jump(Operator op, const Var& result, const Var& arg1, const Var& arg2)
+{
+	/*
+		步骤：
+		1 载入arg1到rbx，arg2到rcx
+		2 生成cmpq rbx, rcx
+		3 根据操作符生成je，jge
+	*/
+	std::string code = "";
+	code += gen_access_arg(arg1, RBX);
+	code += gen_access_arg(arg2, RCX);
+	code += "cmpq " + RBX + ", " + RCX;
+	std::string jump = "";
+	switch (op)
+	{
+	case Operator::OP_LESS:
+		jump = "jl";
+		break;
+	case Operator::OP_LESS_EQUAL:
+		jump = "jle";
+		break;
+	case Operator::OP_EQUAL:
+		jump = "je";
+		break;
+	case Operator::OP_NOT_EQUAL:
+		jump = "jne";
+		break;
+	case Operator::OP_GREATER:
+		jump = "jg";
+		break;
+	case Operator::OP_GREATER_EQUAL:
+		jump = "jge";
+		break;
+	default:
+		break;
+	}
+	std::string label = result.value_string;
+	if (label.empty())
+	{
+		error("label is empty");
+		return "";
+	}
+	code += "\t" + jump + " " + label;
+	return code;
+}
+
+std::string CodeGen::gen_if_false_jump(Operator op, const Var& result, const Var& arg1, const Var& arg2)
+{
+	// 思路同gen_if_jump，除了跳转指令是反的
+	std::string code = "";
+	code += gen_access_arg(arg1, RBX);
+	code += gen_access_arg(arg2, RCX);
+	code += "cmpq " + RBX + ", " + RCX;
+	std::string jump = "";
+	switch (op)
+	{
+	case Operator::OP_LESS:
+		jump = "jge";
+		break;
+	case Operator::OP_LESS_EQUAL:
+		jump = "jg";
+		break;
+	case Operator::OP_EQUAL:
+		jump = "jne";
+		break;
+	case Operator::OP_NOT_EQUAL:
+		jump = "je";
+		break;
+	case Operator::OP_GREATER:
+		jump = "jle";
+		break;
+	case Operator::OP_GREATER_EQUAL:
+		jump = "jl";
+		break;
+	default:
+		break;
+	}
+	std::string label = result.value_string;
+	if (label.empty())
+	{
+		error("label is empty");
+		return "";
+	}
+	code += "\t" + jump + " " + label;
+	return code;
+}
+
+std::string CodeGen::gen_jump(const Var& result)
+{
+	std::string code = "";
+	std::string label = result.value_string;
+	if (label.empty())
+	{
+		error("label is empty");
+		return "";
+	}
+	code += "\tjmp " + label;
+	return code;
+	return std::string();
+}
+
 bool CodeGen::register_check(const std::string& reg_name)
 {
-	if (reg_name == "%rbx" || reg_name == "%rcx" || reg_name == "%rax")
+	if (reg_name == RBX || reg_name == RCX || reg_name == RAX)
 	{
 		return true;
 	}

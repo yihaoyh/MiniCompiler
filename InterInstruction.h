@@ -37,20 +37,22 @@ enum class Inst_Type
 class InterInstruction
 {
 public:
-    InterInstruction(const Address result, Operator op, Address arg1, Address arg2);
     static InterInstruction gen_if_jump(Operator op, Address arg1, Address arg2);
     static InterInstruction gen_if_false_jump(Operator op, Address arg1, Address arg2);
     static InterInstruction gen_jump();
+    InterInstruction(const Address result, const Operator op, const Address arg1, const Address arg2);
+    InterInstruction(const Inst_Type type, const Address result, const Operator op, const Address arg1, const Address arg2);
+    static std::string type_to_string(const Inst_Type& type);
     std::string to_string();
-    //InterInstruction(Call call);
+
     Address result;
     Operator op;
     Address arg1;
     Address arg2;
     Call call;
     unsigned int index = 0;  // 指令序号
+    std::string label; // 指令标号
     std::vector<unsigned int> next_list;
-    //unsigned int next_index = 0; // 下一个指令的序号
     Inst_Type type;
     virtual ~InterInstruction() {};
 };

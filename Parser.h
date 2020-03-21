@@ -13,6 +13,7 @@ class Parser
 public:
 	Parser();
 	void begin_parse(const std::string& file_name);
+	void post_parse();
 	void print_instructions();
 private:
 	/* 

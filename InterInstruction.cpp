@@ -1,14 +1,53 @@
 #include "InterInstruction.h"
 #include<sstream>
 #include"Utils.h"
-InterInstruction::InterInstruction(Address result, Operator op, Address arg1, Address arg2) :result{ result }, op{ op }, arg1{ arg1 }, arg2{ arg2 }
+InterInstruction::InterInstruction(const Address result, const Operator op, const Address arg1, const Address arg2) 
+    :result{ result }, op{ op }, arg1{ arg1 }, arg2{ arg2 }
 {
     type = Inst_Type::NORMAL;
+}
+
+InterInstruction::InterInstruction(const Inst_Type type, const Address result, const Operator op, const Address arg1, const Address arg2):
+    type{type}, result{ result }, op{ op }, arg1{ arg1 }, arg2{ arg2 }
+{
+}
+
+std::string InterInstruction::type_to_string(const Inst_Type& type)
+{
+    switch (type)
+    {
+    case Inst_Type::NORMAL:
+        return "normal";
+    case Inst_Type::IF_JUMP:
+        return "if";
+    case Inst_Type::IF_FALSE_JUMP:
+        return "if_false";
+    case Inst_Type::JUMP:
+        return "go";
+    default:
+        return "normal";
+    }
+}
+
+InterInstruction InterInstruction::gen_if_jump(Operator op, Address arg1, Address arg2)
+{
+    return InterInstruction(Inst_Type::IF_JUMP, Address(), op, arg1, arg2);
+}
+
+InterInstruction InterInstruction::gen_if_false_jump(Operator op, Address arg1, Address arg2)
+{
+    return InterInstruction(Inst_Type::IF_FALSE_JUMP, Address(), op, arg1, arg2);
+}
+
+InterInstruction InterInstruction::gen_jump()
+{
+    return InterInstruction(Inst_Type::JUMP, Address(), Operator::OP_JUMP, Address(), Address());
 }
 
 std::string InterInstruction::to_string()
 {
     std::stringstream ss;
+    ss << InterInstruction::type_to_string(type) << " ";
     if (result.type == NAME)
     {
         ss << result.value << " = ";
@@ -72,17 +111,4 @@ Address var_to_address(const Var& var)
     return Address{ UNKNOWN, "" };
 }
 
-InterInstruction InterInstruction::gen_if_jump(Operator op, Address arg1, Address arg2)
-{
-    return InterInstruction(Address(), op, arg1, arg2);
-}
 
-InterInstruction InterInstruction::gen_if_false_jump(Operator op, Address arg1, Address arg2)
-{
-    return InterInstruction(Address(), op, arg1, arg2);
-}
-
-InterInstruction InterInstruction::gen_jump()
-{
-    return InterInstruction(Address(), Operator::OP_JUMP, Address(), Address());
-}

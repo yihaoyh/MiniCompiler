@@ -26,6 +26,13 @@ void Parser::begin_parse(const std::string& file_name)
     move_token();
     program();
 }
+
+void Parser::post_parse()
+{
+    // 对生成的指令进行后处理，给指令添加标号，消除不必要的goto，例如当goto的目标是自己的下一条语句时，去除goto
+}
+
+
 void Parser::print_instructions()
 {
     std::vector<Function> functions = get_functions();
