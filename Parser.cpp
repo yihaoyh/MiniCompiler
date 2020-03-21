@@ -16,6 +16,9 @@ Parser::Parser()
 {
     current_function_ = nullptr;
     index = -1;
+    // 预添加一个函数
+    Function fun = Function("print", false, Type::VOID, std::vector<Var>());
+    function_table_["print"] = fun;
 }
 void Parser::begin_parse(const std::string& file_name)
 {

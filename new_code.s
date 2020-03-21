@@ -4,14 +4,32 @@ f:
 	pushq %rbp
 	movq %rsp, %rbp
 	movq 16(%rbp), %rbx
-	movq $10 , %rcx
-	addq %rcx, %rbx
+	movq $0 , %rcx
+	cmpq %rbx, %rcx
+	je .Lf0
+	jmp .Lf1
+.Lf0:
+	movq 16(%rbp), %rax
+	jmp .end_f
+.Lf1:
+	movq 16(%rbp), %rbx
+	movq $1 , %rcx
+	subq %rcx, %rbx
 	pushq %rbx
 	movq -8(%rbp), %rbx
 	pushq %rbx
-	movq -16(%rbp), %rax
-.end
-	addq $16, %rsp
+	call f
+	movq %rax, %rbx
+	pushq %rbx
+	movq 16(%rbp), %rbx
+	movq -24(%rbp), %rcx
+	addq %rcx, %rbx
+	pushq %rbx
+	movq -32(%rbp), %rax
+	jmp .end_f
+.end_f:
+	subq %rsp, %rbp
+	addq %rbp, %rsp
 	popq %rbp
 	ret
 .LC0:
@@ -21,17 +39,22 @@ f:
 main:
 	pushq %rbp
 	movq %rsp, %rbp
-	movq $0 , %rbx
+	movq $5 , %rbx
 	pushq %rbx
 	movq -8(%rbp), %rbx
-	movq $1 , %rcx
-	cmpq %rbx, %rcx
-	jl .L0
-	jmp .end
-.L0:
-	movq $2 , %rbx
+	pushq %rbx
+	call f
+	movq %rax, %rbx
+	pushq %rbx
+	movq -24(%rbp), %rbx
 	movq %rbx, -8(%rbp)
-.end
-	addq $8, %rsp
+	movq -8(%rbp), %rbx
+	pushq %rbx
+	movl %ebx, %esi
+	leaq	.LC0(%rip), %rdi
+	call	printf@PLT
+.end_main:
+	subq %rsp, %rbp
+	addq %rbp, %rsp
 	popq %rbp
 	ret

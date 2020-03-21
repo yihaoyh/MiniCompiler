@@ -18,8 +18,8 @@ Function::Function() : name{ "" }, is_declaration{ "false" }
 */
 unsigned int Function::add_instruction(InterInstruction& inst)
 {
+    inst.index = inst_vector_.size();
     inst_vector_.push_back(inst);
-    inst.index = inst_vector_.size() - 1;
     return inst.index;
 }
 
@@ -63,7 +63,7 @@ Var Function::gen_temp_var(const Type type)
 std::string Function::gen_label()
 {
     std::stringstream sstream;
-    sstream << ".L" << label_index_++;
+    sstream << ".L" << name << label_index_++;
     return sstream.str();
 }
 

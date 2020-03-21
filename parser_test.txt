@@ -1,19 +1,28 @@
 int f(int a)
 {
-	int b = a + 10;
-	return b;
+	if(a == 0)
+	{
+		return a;
+	}
+	//else
+	//{
+		return a + f(a - 1);
+	//}
+	//int b = a + 10;
+	//return b;
 }
 
 void main()
 {
-    int a = 0;
-	if( a < 1 )
-	{
-		a = 2;
-	}
+    int a = 2;
+	a = f(a);
+	print(a);
+	//if( a < 1 )
+	//{
+	//	a = 2;
+	//}
 	//a = a + 1 + 2;
 	//a = f(a);
-	//print();
 }
 
 // 

@@ -78,7 +78,7 @@ std::string CodeGen::parse_instruction(const InterInstruction& inst)
         {
             error("arg2 must be number or id in add/sub");
         }
-        return gen_low_op(inst.op, result, arg1, arg2);
+        return code + gen_low_op(inst.op, result, arg1, arg2);
     case Operator::OP_ASSIGN:
         if (result.tag != IDENTIFIER)
         {
@@ -235,11 +235,15 @@ std::string CodeGen::gen_enter_proc()
 */
 std::string CodeGen::gen_exit_proc()
 {
+    /*
+        退出临时分配的栈帧空间
+    */
     std::stringstream sstream;
-    sstream << ".end:\n";
-    sstream << "\taddq $" << curr_frame_.get_frame_length() << ", %rsp\n";
+    sstream << ".end_" <<function_->name <<":\n";
+    sstream << "\tsubq %rsp, %rbp\n";
+    sstream << "\taddq %rbp, %rsp\n";
     sstream << "\tpopq %rbp\n"\
-        "\tret\n";
+               "\tret\n";
     return sstream.str();
 }
 
@@ -248,7 +252,7 @@ std::string CodeGen::gen_exit_proc()
 */
 std::string CodeGen::gen_return(const Var& result)
 {
-    return gen_access_arg(result, RAX);
+    return gen_access_arg(result, RAX) + "\tjmp .end_" + function_->name + "\n";
 }
 
 /*
@@ -282,6 +286,7 @@ std::string CodeGen::gen_create_variable(const std::string& reg_name)
     }
     std::stringstream sstream;
     sstream << "\tpushq " << reg_name << "\n";
+    //sstream << "\taddq $8, %rdx\n";
     return sstream.str();
 }
 

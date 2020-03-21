@@ -96,5 +96,5 @@ std::string gen_print_int(int value)
 	sstream << "\tmovl %ebx" << ", %esi\n";
 	sstream << "\tleaq	.LC0(%rip), %rdi\n";
 	sstream << "\tcall	printf@PLT\n";
-	return std::string();
+	return sstream.str();
 }
