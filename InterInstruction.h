@@ -54,6 +54,7 @@ public:
     std::string label; // ÷∏¡Ó±Í∫≈
     std::vector<unsigned int> next_list;
     Inst_Type type;
+    bool removed = false;
     virtual ~InterInstruction() {};
 };
 

@@ -23,7 +23,7 @@ std::string InterInstruction::type_to_string(const Inst_Type& type)
     case Inst_Type::IF_FALSE_JUMP:
         return "if_false";
     case Inst_Type::JUMP:
-        return "go";
+        return "goto";
     default:
         return "normal";
     }
@@ -52,11 +52,11 @@ std::string InterInstruction::to_string()
     {
         ss << result.value << " = ";
     }
-    else
+    /*else
     {
         error("result must be lvalue");
         return "";
-    }
+    }*/
     if (arg1.type != EMPTY)
     {
         ss << arg1.value;

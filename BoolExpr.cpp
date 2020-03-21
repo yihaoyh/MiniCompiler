@@ -20,7 +20,7 @@ void BoolExpr::back_patch_list(Function& function, std::vector<instr_index> list
     for (auto iter = list.begin(); iter != list.end(); ++iter)
     {
         InterInstruction& inst = function.get_instruction(*iter);
-        Address addr = Address{NAME, str};
+        Address addr = Address{LITERAL_STRING, str};
         inst.result = addr;
     }
 }

@@ -4,6 +4,7 @@
 #include<assert.h>
 #include"CodeGen.h"
 #include"Utils.h"
+#include<string>
 
 #define FIRST(TAG) token_look_.tag() == TAG
 #define OR(TAG) ||token_look_.tag() == TAG
@@ -30,6 +31,55 @@ void Parser::begin_parse(const std::string& file_name)
 void Parser::post_parse()
 {
     // 对生成的指令进行后处理，给指令添加标号，消除不必要的goto，例如当goto的目标是自己的下一条语句时，去除goto
+    for (auto iter = functions_.begin(); iter != functions_.end(); ++iter)
+    {
+        std::vector<InterInstruction>& insts = iter->get_instructions();
+        for (auto inst_iter = insts.begin(); inst_iter != insts.end(); ++inst_iter)
+        {
+            if (inst_iter->type == Inst_Type::IF_JUMP || inst_iter->type == Inst_Type::IF_FALSE_JUMP || inst_iter->type == Inst_Type::JUMP)
+            {
+                Address& addr = inst_iter->result;
+                instr_index index = stoi(addr.value);
+                if (index < 0 || index > insts.size())
+                {
+                    error("post_parse::invalid index");
+                    continue;
+                }
+                if (index == inst_iter->index + 1)
+                {
+                    inst_iter->removed = true;
+                }
+                else
+                {
+                    if (index == insts.size())
+                    {
+                        inst_iter->result.value = ".end";
+                    }
+                    else
+                    {
+                        InterInstruction& jump_dest = insts[index];
+                        if (jump_dest.label.empty())
+                        {
+                            jump_dest.label = iter->gen_label();
+                        }
+                        inst_iter->result.value = jump_dest.label;
+                    }
+                }
+            }
+        }
+
+        for (auto inst_iter = insts.begin(); inst_iter != insts.end();)
+        {
+            if (inst_iter->removed)
+            {
+                inst_iter = insts.erase(inst_iter);
+            }
+            else
+            {
+                ++inst_iter;
+            }
+        }
+    }
 }
 
 
@@ -251,7 +301,6 @@ Statement Parser::statement()
         {
             add_instruction(InterInstruction(Address(), Operator::OP_RETURN, var_to_address(result), Address()));
             s.next_list.clear();
-            return s;
         }
         else
         {
@@ -292,14 +341,13 @@ Statement Parser::statement()
         if (match(SEMICOLON))
         {
             s.next_list.clear();
-            return s;
         }
         else
         {
             recovery();
         }
     }
-    return Statement();
+    return s;
 }
 
 /*

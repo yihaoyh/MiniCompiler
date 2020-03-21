@@ -115,9 +115,14 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <Text Include="test.txt">
+    <None Include="code_gen.s">
       <Filter>资源文件</Filter>
-    </Text>
+    </None>
+    <None Include="new_code.s">
+      <Filter>资源文件</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
     <Text Include="parser_test.txt">
       <Filter>资源文件</Filter>
     </Text>

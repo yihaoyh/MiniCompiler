@@ -28,7 +28,7 @@ InterInstruction& Function::get_instruction(unsigned int index)
     return inst_vector_[index];
 }
 
-const std::vector<InterInstruction>& Function::get_instructions()
+std::vector<InterInstruction>& Function::get_instructions()
 {
     return inst_vector_;
 }
@@ -63,9 +63,8 @@ Var Function::gen_temp_var(const Type type)
 std::string Function::gen_label()
 {
     std::stringstream sstream;
-    sstream << "L_" << label_index_++;
+    sstream << ".L" << label_index_++;
     return sstream.str();
-
 }
 
 SymTable* Function::get_sym_table()

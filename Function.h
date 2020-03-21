@@ -13,7 +13,7 @@ public:
 	Function();
     unsigned int add_instruction(InterInstruction& inst);
 	InterInstruction& get_instruction(unsigned int index);
-	const std::vector<InterInstruction>& get_instructions();
+	std::vector<InterInstruction>& get_instructions();
 	const std::vector<Var> get_params();
 	unsigned int get_next_instruction();
 	void put_variable(const Var& var);

@@ -12,6 +12,7 @@ void init_keyword_table()
 	keyword_table["string"] = KW_STRING;
 	keyword_table["if"] = KW_IF;
 	keyword_table["else"] = KW_ELSE;
+	keyword_table["while"] = KW_ELSE;
 	keyword_table["return"] = KW_RETURN;
 	keyword_table["void"] = KW_VOID;
 }

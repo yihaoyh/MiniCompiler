@@ -14,5 +14,6 @@ int main()
 	init_keyword_table();
 	Parser parser;
 	parser.begin_parse("parser_test.txt");
+	parser.post_parse();
 	parser.print_instructions();
 }
