@@ -46,18 +46,15 @@ std::string CodeGen::parse_instruction(const InterInstruction& inst)
 	std::string code = "";
 	if (inst.type == Inst_Type::IF_JUMP)
 	{
-		gen_if_jump(inst.op, result, arg1, arg2);
-		return;
+		return gen_if_jump(inst.op, result, arg1, arg2);
 	}
 	else if (inst.type == Inst_Type::IF_FALSE_JUMP)
 	{
-		gen_if_false_jump(inst.op, result, arg1, arg2);
-		return;
+		return gen_if_false_jump(inst.op, result, arg1, arg2);
 	}
 	else if (inst.type == Inst_Type::JUMP)
 	{
-		gen_jump(result);
-		return;
+		return gen_jump(result);
 	}
 	// normal
 	switch (inst.op)

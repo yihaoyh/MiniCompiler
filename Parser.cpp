@@ -407,9 +407,9 @@ BoolExpr Parser::compare_tail(Var& lval, BoolExpr& expr)
         debug("a compare expr occur\n");
         // 生成关系运算表达式
         InterInstruction if_jump = InterInstruction::gen_if_jump(op, var_to_address(lval), var_to_address(rval));
-        if_jump.index = add_instruction(if_jump);
+        add_instruction(if_jump);
         InterInstruction jump = InterInstruction::gen_jump();
-        jump.index = add_instruction(jump);
+        add_instruction(jump);
         expr.true_list.push_back(if_jump.index);
         expr.false_list.push_back(jump.index);
     }
@@ -774,7 +774,13 @@ void Parser::put_variable(Var var)
     current_function_->put_variable(var);
 }
 
-instr_index Parser::add_instruction(InterInstruction instrunction)
+instr_index Parser::add_instruction(InterInstruction& instrunction)
+{
+    assert(current_function_ != nullptr);
+    return current_function_->add_instruction(instrunction);
+}
+
+instr_index Parser::add_instruction(InterInstruction&& instrunction)
 {
     assert(current_function_ != nullptr);
     return current_function_->add_instruction(instrunction);

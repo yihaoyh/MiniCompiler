@@ -177,8 +177,10 @@ private:
 
 	void put_variable(Var var);
 
-	instr_index add_instruction(InterInstruction instrunction);
+	instr_index add_instruction(InterInstruction&& instrunction);
 	
+	instr_index add_instruction(InterInstruction& instrunction);
+
 	/*
 		往后移动一个token
 	*/
