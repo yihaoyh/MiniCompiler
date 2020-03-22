@@ -31,6 +31,9 @@ std::string CodeGen::parse_function(const Function& fun) {
   code += gen_header(curr_frame_.fun_name);
   code += gen_enter_proc();
   for (auto iter = inst_list.begin(); iter != inst_list.end(); ++iter) {
+    if (iter->removed) {
+      continue;
+    }
     code += parse_instruction(*iter);
   }
   code += gen_exit_proc();
