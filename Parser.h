@@ -177,9 +177,9 @@ private:
 
 	void put_variable(Var var);
 
-	instr_index add_instruction(InterInstruction&& instrunction);
+	instr_number add_instruction(InterInstruction&& instrunction);
 	
-	instr_index add_instruction(InterInstruction& instrunction);
+	instr_number add_instruction(InterInstruction& instrunction);
 
 	/*
 		往后移动一个token
@@ -221,7 +221,7 @@ private:
 
 	std::vector<Function> get_functions();
 
-	std::vector<instr_index> merge(std::vector<instr_index>list1, std::vector<instr_index>list2);
+	std::vector<instr_number> merge(std::vector<instr_number>list1, std::vector<instr_number>list2);
 
 	Token token_look_;
 	Lexer lexer_;

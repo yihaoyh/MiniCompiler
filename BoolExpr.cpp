@@ -1,6 +1,6 @@
 #include "BoolExpr.h"
 #include <sstream>
-void BoolExpr::back_patch(Function& function, int flag, instr_index label)
+void BoolExpr::back_patch(Function& function, int flag, instr_number label)
 {
     if (flag == 0)
     {
@@ -12,7 +12,7 @@ void BoolExpr::back_patch(Function& function, int flag, instr_index label)
     }
 }
 
-void BoolExpr::back_patch_list(Function& function, std::vector<instr_index> list, instr_index label)
+void BoolExpr::back_patch_list(Function& function, std::vector<instr_number> list, instr_number label)
 {
     std::stringstream sstream;
     sstream << label;

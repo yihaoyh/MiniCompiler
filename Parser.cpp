@@ -8,10 +8,10 @@
 
 #define FIRST(TAG) token_look_.tag() == TAG
 #define OR(TAG) ||token_look_.tag() == TAG
-#define TYPE_FIRST FIRST(KW_INT)OR(KW_CHAR)OR(KW_STRING)OR(KW_VOID)
-#define EXPR_FIRST FIRST(LPAREN)OR(LT_NUMBER)OR(LT_CHAR)OR(LT_STRING)OR(IDENTIFIER)OR(SUB)OR(MULTIPLY)
-#define STATEMENT_FIRST EXPR_FIRST OR(KW_IF)OR(KW_RETURN)OR(KW_WHILE)
-#define COMPARE_FIRST FIRST(LESS)OR(LESS_EQUAL)OR(EQUAL)OR(NOT_EQUAL)OR(GREATER)OR(GREATER_EQUAL)
+#define TYPE_FIRST FIRST(Tag::KW_INT)OR(Tag::KW_CHAR)OR(Tag::KW_STRING)OR(Tag::KW_VOID)
+#define EXPR_FIRST FIRST(Tag::LPAREN)OR(Tag::LT_NUMBER)OR(Tag::LT_CHAR)OR(Tag::LT_STRING)OR(Tag::IDENTIFIER)OR(Tag::SUB)OR(Tag::MULTIPLY)
+#define STATEMENT_FIRST EXPR_FIRST OR(Tag::KW_IF)OR(Tag::KW_RETURN)OR(Tag::KW_WHILE)
+#define COMPARE_FIRST FIRST(Tag::LESS)OR(Tag::LESS_EQUAL)OR(Tag::EQUAL)OR(Tag::NOT_EQUAL)OR(Tag::GREATER)OR(Tag::GREATER_EQUAL)
 Parser::Parser()
 {
     current_function_ = nullptr;
@@ -42,7 +42,7 @@ void Parser::post_parse()
             if (inst_iter->type == Inst_Type::IF_JUMP || inst_iter->type == Inst_Type::IF_FALSE_JUMP || inst_iter->type == Inst_Type::JUMP)
             {
                 Address& addr = inst_iter->result;
-                instr_index index = stoi(addr.value);
+                instr_number index = stoi(addr.value);
                 if (index < 0 || index > insts.size())
                 {
                     error("post_parse::invalid index");
@@ -108,7 +108,7 @@ void Parser::print_instructions()
 void Parser::program()
 {
     //move_token();
-    if (FIRST(END_OF_FILE))
+    if (FIRST(Tag::END_OF_FILE))
     {
         return;
     }
@@ -142,7 +142,7 @@ Type Parser::type()
 void Parser::def(const Type& type)
 {
     std::string name = "";
-    if (FIRST(IDENTIFIER))
+    if (FIRST(Tag::IDENTIFIER))
     {
         name = token_look_.get_name();
         move_token();
@@ -162,17 +162,17 @@ Var Parser::varrdef(Var result)
 // <init>-> ASSIGN <expr> | ε  代码"= a * b"
 Var Parser::init(Var result)
 {
-    if (result.tag != IDENTIFIER)
+    if (result.tag != Tag::IDENTIFIER)
     {
         recovery();
         error("result must be lvalue");
         return Var::default_;
     }
     Var var;
-    if (match(ASSIGN))
+    if (match(Tag::ASSIGN))
     {
         var = expr();
-        if (var.tag != IDENTIFIER && var.tag != LT_NUMBER && var.tag != LT_CHAR && var.tag != LT_STRING)
+        if (var.tag != Tag::IDENTIFIER && var.tag != Tag::LT_NUMBER && var.tag != Tag::LT_CHAR && var.tag != Tag::LT_STRING)
         {
             recovery();
             error("arg1 must be id or literal");
@@ -180,7 +180,7 @@ Var Parser::init(Var result)
         }
         add_instruction(InterInstruction(var_to_address(result), Operator::OP_ASSIGN, var_to_address(var), Address()));
     }
-    else if (FIRST(END_OF_FILE))
+    else if (FIRST(Tag::END_OF_FILE))
     {
         return var;
     }
@@ -198,12 +198,12 @@ void Parser::deflist()
 // <defdata>->ID <varrdef> 对应代码"a = 10 * b"
 void Parser::defdata(const Type& type)
 {
-    if (FIRST(IDENTIFIER))
+    if (FIRST(Tag::IDENTIFIER))
     {
         std::string name = token_look_.get_name();
         move_token();
         Var result;
-        result.tag = IDENTIFIER;
+        result.tag = Tag::IDENTIFIER;
         result.name = name;
         result.type = type;
         put_variable(result);
@@ -217,7 +217,7 @@ void Parser::paradata(std::vector<Var>& params)
     {
         Type type = tag_to_type(token_look_.tag());
         move_token();
-        if (FIRST(IDENTIFIER))
+        if (FIRST(Tag::IDENTIFIER))
         {
             std::cout << "para name " << token_look_.get_name() << std::endl;
             // 将参数类型添加到函数
@@ -234,7 +234,7 @@ void Parser::paradatatail()
 void Parser::para(std::vector<Var>& params)
 {
     paradata(params);
-    if (match(COMMA))
+    if (match(Tag::COMMA))
     {
         para(params);
     }
@@ -243,11 +243,11 @@ void Parser::para(std::vector<Var>& params)
 Statement Parser::block()
 {
     Statement s;
-    if (FIRST(LBRACES))
+    if (FIRST(Tag::LBRACES))
     {
         move_token();
         s = subprogram();
-        if (match(RBRACES))
+        if (match(Tag::RBRACES))
         {
             return s;
         }
@@ -262,7 +262,7 @@ Statement Parser::block()
 // <subprogram>-><localdef> <subprogram> | <statement> <subprogram> | ε
 Statement Parser::subprogram()
 {
-    if (FIRST(END_OF_FILE))
+    if (FIRST(Tag::END_OF_FILE))
     {
         return Statement();
     }
@@ -280,7 +280,7 @@ Statement Parser::subprogram()
         */
         Statement l;
         Statement s = statement();
-        instr_index m = current_function_->get_next_instruction();
+        instr_number m = current_function_->get_next_instruction();
         BoolExpr::back_patch_list(*current_function_, s.next_list, m);
         Statement l1 = subprogram();
         if (!l1.next_list.empty())
@@ -297,10 +297,10 @@ Statement Parser::subprogram()
 Statement Parser::statement()
 {
     Statement s;
-    if (match(KW_RETURN))
+    if (match(Tag::KW_RETURN))
     {
         Var result = expr();
-        if (match(SEMICOLON))
+        if (match(Tag::SEMICOLON))
         {
             add_instruction(InterInstruction(Address(), Operator::OP_RETURN, var_to_address(result), Address()));
             s.next_list.clear();
@@ -310,17 +310,17 @@ Statement Parser::statement()
             recovery();
         }
     }
-    else if (match(KW_IF))
+    else if (match(Tag::KW_IF))
     {
         /*
             S->if (B) M S1
             backpatch(B.truelist, M.instr)
             s.nextlist = merge(B.falselist, S1.nextlist)
         */
-        if (match(LPAREN))
+        if (match(Tag::LPAREN))
         {
             BoolExpr b = or_expr();
-            if (match(RPAREN))
+            if (match(Tag::RPAREN))
             {
                 unsigned int m = current_function_->get_next_instruction();
                 b.back_patch(*current_function_, 1, m);
@@ -341,7 +341,7 @@ Statement Parser::statement()
     {
         Var var = expr();
         put_variable(var);
-        if (match(SEMICOLON))
+        if (match(Tag::SEMICOLON))
         {
             s.next_list.clear();
         }
@@ -365,16 +365,16 @@ Var Parser::assign_expr()
 
 void Parser::assign_tail(Var lvalue)
 {
-    if (match(ASSIGN))
+    if (match(Tag::ASSIGN))
     {
         Var rvalue = assign_expr();
-        if (lvalue.tag != IDENTIFIER)
+        if (lvalue.tag != Tag::IDENTIFIER)
         {
             error("assignment must with a lvalue");
             recovery();
             return;
         }
-        if (rvalue.tag != IDENTIFIER && rvalue.tag != LT_NUMBER && rvalue.tag != LT_CHAR && rvalue.tag != LT_STRING)
+        if (rvalue.tag != Tag::IDENTIFIER && rvalue.tag != Tag::LT_NUMBER && rvalue.tag != Tag::LT_CHAR && rvalue.tag != Tag::LT_STRING)
         {
             recovery();
             error("rvalue must be id or literal");
@@ -392,7 +392,7 @@ BoolExpr Parser::or_expr()
 }
 BoolExpr Parser::or_tail(BoolExpr& b1)
 {
-    if (match(OR))
+    if (match(Tag::OR))
     {
         /*
             B -> B1 || M B2
@@ -421,7 +421,7 @@ BoolExpr Parser::and_expr()
 
 BoolExpr Parser::and_tail(BoolExpr& b1)
 {
-    if (match(AND))
+    if (match(Tag::AND))
     {
         /*
             对应龙书的布尔表达式回填逻辑
@@ -475,7 +475,7 @@ void Parser::localdef()
     defdata(t);
     //move_token();
     deflist();
-    if (FIRST(SEMICOLON))
+    if (FIRST(Tag::SEMICOLON))
     {
         move_token();
     }
@@ -504,13 +504,13 @@ void Parser::operand()
 
 Operator Parser::op_low()
 {
-    if (FIRST(ADD)OR(SUB))
+    if (FIRST(Tag::ADD)OR(Tag::SUB))
     {
         switch (token_look_.tag())
         {
-        case ADD:
+        case Tag::ADD:
             return Operator::OP_ADD;
-        case SUB:
+        case Tag::SUB:
             return Operator::OP_SUB;
         }
     }
@@ -524,17 +524,17 @@ Operator Parser::op_compare()
     {
         switch (token_look_.tag())
         {
-        case LESS:
+        case Tag::LESS:
             return Operator::OP_LESS;
-        case LESS_EQUAL:
+        case Tag::LESS_EQUAL:
             return Operator::OP_LESS_EQUAL;
-        case EQUAL:
+        case Tag::EQUAL:
             return Operator::OP_EQUAL;
-        case NOT_EQUAL:
+        case Tag::NOT_EQUAL:
             return Operator::OP_NOT_EQUAL;
-        case GREATER:
+        case Tag::GREATER:
             return Operator::OP_GREATER;
-        case GREATER_EQUAL:
+        case Tag::GREATER_EQUAL:
             return Operator::OP_GREATER_EQUAL;
         }
     }
@@ -559,7 +559,7 @@ Var Parser::alo_expr()
 Var Parser::alo_tail(const Var& arg1)
 {
     assert(current_function_ != nullptr);
-    if (FIRST(ADD)OR(SUB))
+    if (FIRST(Tag::ADD)OR(Tag::SUB))
     {
         Operator op = op_low();
         move_token();
@@ -593,7 +593,7 @@ void Parser::para_transit()
     // 保存到参数列表在汇编中的实现是将表达式结果压栈（无论该变量之前是否已经保存在栈中）。
     // 因为通用的方式是将参数放在调用函数栈帧的底部
     std::cout << "parse one param" << std::endl;
-    if (match(COMMA))
+    if (match(Tag::COMMA))
     {
         para_transit();
     }
@@ -617,7 +617,7 @@ Var Parser::item()
 Var Parser::itemtail(const Var& arg1)
 {
     assert(current_function_ != nullptr);
-    if (FIRST(MULTIPLY)OR(DIVIDE))
+    if (FIRST(Tag::MULTIPLY)OR(Tag::DIVIDE))
     {
         Operator op = op_high();
         move_token();
@@ -632,13 +632,13 @@ Var Parser::itemtail(const Var& arg1)
 
 Operator Parser::op_high()
 {
-    if (FIRST(MULTIPLY)OR(DIVIDE))
+    if (FIRST(Tag::MULTIPLY)OR(Tag::DIVIDE))
     {
         switch (token_look_.tag())
         {
-        case MULTIPLY:
+        case Tag::MULTIPLY:
             return Operator::OP_MUL;
-        case DIVIDE:
+        case Tag::DIVIDE:
             return Operator::OP_DIV;
         }
     }
@@ -662,7 +662,7 @@ Var Parser::val()
 Var Parser::elem()
 {
     Var var;
-    if (FIRST(IDENTIFIER))
+    if (FIRST(Tag::IDENTIFIER))
     {
         // 从符号表中读取变量
         std::string name = token_look_.get_name();
@@ -670,12 +670,12 @@ Var Parser::elem()
         var = idexpr(name);
 
     }
-    else if (FIRST(LPAREN))
+    else if (FIRST(Tag::LPAREN))
     {
         move_token();
         var = expr();
         move_token();
-        if (!(FIRST(RPAREN))) {
+        if (!(FIRST(Tag::RPAREN))) {
             recovery();
         }
     }
@@ -688,7 +688,7 @@ Var Parser::elem()
 
 Var Parser::literal()
 {
-    if (FIRST(LT_NUMBER)OR(LT_CHAR)OR(LT_STRING))
+    if (FIRST(Tag::LT_NUMBER)OR(Tag::LT_CHAR)OR(Tag::LT_STRING))
     {
         Type type = tag_to_type(token_look_.tag());
 
@@ -716,7 +716,6 @@ void Parser::recovery()
     std::string error_msg = "recovery wrong token ";
     error_msg += token_look_.get_name();
     error(error_msg.c_str());
-
 }
 
 void Parser::move_token()
@@ -726,7 +725,7 @@ void Parser::move_token()
         do
         {
             token_look_ = lexer_.tokenize();
-        } while (token_look_.tag() == COMMENT);
+        } while (token_look_.tag() == Tag::COMMENT);
         token_stack_.push_back(token_look_);
         index++;
     }
@@ -742,11 +741,11 @@ void Parser::move_token()
 Var Parser::idtail(const Type& type, std::string name)
 {
     Var var;
-    if (match(LPAREN))
+    if (match(Tag::LPAREN))
     {
         std::vector<Var> params;
         para(params);
-        if (!(FIRST(RPAREN)))
+        if (!(FIRST(Tag::RPAREN)))
         {
             recovery();
         }
@@ -765,14 +764,14 @@ Var Parser::idtail(const Type& type, std::string name)
 
 void Parser::funtail(const Type& type, std::string fun_name, const std::vector<Var>& params)
 {
-    if (FIRST(SEMICOLON))
+    if (FIRST(Tag::SEMICOLON))
     {
         std::cout << "function declaration occur name:" << fun_name << std::endl;
         Function func = Function(fun_name, true, type, std::vector<Var>());
         functions_.push_back(func);
         put_function(func);
     }
-    else if (FIRST(LBRACES)) {
+    else if (FIRST(Tag::LBRACES)) {
         std::cout << "function definition occur name:" << fun_name << std::endl;
         Function func = Function(fun_name, false, type, params);
         functions_.push_back(func);
@@ -791,11 +790,11 @@ Var Parser::idexpr(std::string name)
     assert(current_function_ != nullptr);
 
     Var var;
-    if (match(LPAREN))
+    if (match(Tag::LPAREN))
     {
         // 处理传参
         para_transit();
-        if (FIRST(RPAREN) == false)
+        if (FIRST(Tag::RPAREN) == false)
         {
             recovery();
         }
@@ -825,13 +824,13 @@ void Parser::put_variable(Var var)
     current_function_->put_variable(var);
 }
 
-instr_index Parser::add_instruction(InterInstruction& instrunction)
+instr_number Parser::add_instruction(InterInstruction& instrunction)
 {
     assert(current_function_ != nullptr);
     return current_function_->add_instruction(instrunction);
 }
 
-instr_index Parser::add_instruction(InterInstruction&& instrunction)
+instr_number Parser::add_instruction(InterInstruction&& instrunction)
 {
     assert(current_function_ != nullptr);
     return current_function_->add_instruction(instrunction);
@@ -867,9 +866,9 @@ std::vector<Function> Parser::get_functions()
     return functions_;
 }
 
-std::vector<instr_index> Parser::merge(std::vector<instr_index> list1, std::vector<instr_index> list2)
+std::vector<instr_number> Parser::merge(std::vector<instr_number> list1, std::vector<instr_number> list2)
 {
-    std::vector<instr_index>result = std::vector<instr_index>(list1);
+    std::vector<instr_number>result = std::vector<instr_number>(list1);
     result.insert(result.end(), list2.begin(), list2.end());
     return result;
 }

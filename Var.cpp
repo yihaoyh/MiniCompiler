@@ -7,17 +7,17 @@ Var Var::default_ = Var();
  */
 Var Var::create_number(std::string value)
 {
-	return Var(LT_NUMBER, "", value, Type::INT);
+	return Var(Tag::LT_NUMBER, "", value, Type::INT);
 }
 
 Var Var::create_id(std::string name, Type type)
 {
-	return Var(IDENTIFIER, name, "", type);
+	return Var(Tag::IDENTIFIER, name, "", type);
 }
 
 Var::Var()
 {
-	tag = UNKNOWN;
+	tag = Tag::UNKNOWN;
 	type = Type::UNKNOWN;
 }
 

@@ -4,8 +4,6 @@
 #include"Var.h"
 #include"SymTable.h"
 #include"InterInstruction.h"
-//class SymTable;
-
 class Function
 {
 public:
@@ -21,12 +19,11 @@ public:
 	Var gen_temp_var(const Type type);
 	std::string gen_label();
 
-	bool is_declaration;  // true表示声明，false表示定义
-	std::string name; // 函数名称
-	SymTable* get_sym_table();
+	bool is_declaration;	// true表示声明，false表示定义
+	std::string name;		// 函数名称
 	Type return_type = Type::UNKNOWN; 
 private:
-	SymTable sym_table;
+	SymTable sym_table_;
 	std::vector<Var> params_;
 	std::vector<InterInstruction> inst_vector_;
 	unsigned int label_index_ = 0;

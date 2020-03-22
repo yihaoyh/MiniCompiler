@@ -1,9 +1,9 @@
 #pragma once
 #include<string>
 #include<sstream>
-enum Tag			// 词法标签
-{
-	UNKNOWN,        // 未知标签
+enum class Tag	    // 词法标签
+{	
+    UNKNOWN,        // 未知标签
 	ERROR,			// 错误
 	END_OF_FILE,    // 文件结束
 	COMMENT,		// 注释
@@ -50,85 +50,85 @@ enum Tag			// 词法标签
 class Token 
 {
 private:
-	Tag tag_;
-	std::string string_;
+	Tag tag_;	// 标签
+	std::string value_; // 单词的值
 	std::string get_tag_string()
 	{
 		switch (tag_)
 		{
-		case UNKNOWN:
+		case Tag::UNKNOWN:
 			return "unknwon";
-		case ERROR:
+		case Tag::ERROR:
 			return "error";
-		case END_OF_FILE:
+		case Tag::END_OF_FILE:
 			return "end of file";
-		case COMMENT:
+		case Tag::COMMENT:
 			return "comment";
-		case KW_INT:
+		case Tag::KW_INT:
 			return "keyword int";
-		case KW_CHAR:
+		case Tag::KW_CHAR:
 			return "keyword char";
-		case KW_STRING:
+		case Tag::KW_STRING:
 			return "keyword string";
-		case KW_IF:
+		case Tag::KW_IF:
 			return "keyword if";
-		case KW_ELSE:
+		case Tag::KW_ELSE:
 			return "keyword else";
-		case KW_RETURN:
+		case Tag::KW_RETURN:
 			return "keyword return";
-		case KW_VOID:
+		case Tag::KW_VOID:
 			return "keyword void";
-		case LT_NUMBER:
+		case Tag::LT_NUMBER:
 			return "literal number";
-		case LT_CHAR:
+		case Tag::LT_CHAR:
 			return "literal char";
-		case LT_STRING:
+		case Tag::LT_STRING:
 			return "literal string";
-		case LPAREN:
+		case Tag::LPAREN:
 			return "(";
-		case RPAREN:
+		case Tag::RPAREN:
 			return ")";
-		case LBRACES:
+		case Tag::LBRACES:
 			return "{";
-		case RBRACES:
+		case Tag::RBRACES:
 			return "}";
-		case LBRACKET:
+		case Tag::LBRACKET:
 			return "[";
-		case RBRACKET:
+		case Tag::RBRACKET:
 			return "]";
-		case ADD:
+		case Tag::ADD:
 			return "+";
-		case SUB:
+		case Tag::SUB:
 			return "-";
-		case MULTIPLY:
+		case Tag::MULTIPLY:
 			return "*";
-		case DIVIDE:
+		case Tag::DIVIDE:
 			return "/";
-		case COMMA:
+		case Tag::COMMA:
 			return ",";
-		case SEMICOLON:
+		case Tag::SEMICOLON:
 			return ";";
-		case ASSIGN:
+		case Tag::ASSIGN:
 			return "=";
-		case EQUAL:
+		case Tag::EQUAL:
 			return "==";
-		case NOT_EQUAL:
+		case Tag::NOT_EQUAL:
 			return "!=";
-		case IDENTIFIER:
+		case Tag::IDENTIFIER:
 			return "identifier";
-		case LESS:
+		case Tag::LESS:
 			return "<";
-		case LESS_EQUAL:
+		case Tag::LESS_EQUAL:
 			return "<=";
-		case GREATER:
+		case Tag::GREATER:
 			return ">";
-		case GREATER_EQUAL:
+		case Tag::GREATER_EQUAL:
 			return ">=";
-		case AND:
+		case Tag::AND:
 			return "&&";
-		case OR:
+		case Tag::OR:
 			return "||";
-		case NOT:
+		case Tag::NOT:
 			return "!";
 		default:
 			return "unknown";
@@ -137,13 +137,14 @@ private:
 public:
 	Token()
 	{
-		tag_ = UNKNOWN;
-		string_ = "";
+		tag_ = Tag::UNKNOWN;
+		value_ = "";
 	}
 
-	Token(Tag tag, std::string str) :tag_{ tag }, string_{str}
+	Token(Tag tag, std::string str) :tag_{ tag }, value_{str}
 	{
 	}
+
 	Tag tag()
 	{
 		return tag_;
@@ -151,33 +152,36 @@ public:
 
 	std::string get_name()
 	{
-		return string_;
+		return value_;
 	}
 
 	virtual ~Token() {}
+
 	virtual std::string to_string()
 	{
 		std::ostringstream ostr;
-		ostr << "Tag:" << get_tag_string() << " string:" << string_;
+		ostr << "Tag: " << get_tag_string() << " string:" << value_;
 		return std::string(ostr.str());
 	}
+
+	const static Token& unknown_token;
 };
 
 class Lexer
 {
-public:
+ public:
 	Lexer();
 	void scan(const char* file_name);
 	char get_char();
 	void unget_char();
 	void reset();
 	void load_file(const char* file_name);
-	Token tokenize();
+	const Token& tokenize();
 
-private:
+ private:
 	Token* pcurrent_token_;
 	std::string file_string_;
-	unsigned int scan_pos_;
+	unsigned int scan_pos_ = 0;
 	std::string token_string_;
 
 	void parse_number(char);

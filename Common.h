@@ -28,4 +28,4 @@ enum class Operator
 
 void print_error(const char* message);
 
-typedef unsigned int instr_index;
+typedef unsigned int instr_number;

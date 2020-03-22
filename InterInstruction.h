@@ -18,7 +18,7 @@ constexpr auto LITERAL_STRING = 4;
 
 struct Address_
 {
-    int type;
+    int type = -1;
     std::string value;   // 值的字符串形式，type为NAME时为名字，为字面量时需要从字符串进行转换。
 };
 typedef Address_ Address;

@@ -7,14 +7,16 @@ std::map<std::string, Tag> keyword_table;
 
 void init_keyword_table() 
 {
-	keyword_table["int"] = KW_INT;
-	keyword_table["char"] = KW_CHAR;
-	keyword_table["string"] = KW_STRING;
-	keyword_table["if"] = KW_IF;
-	keyword_table["else"] = KW_ELSE;
-	keyword_table["while"] = KW_ELSE;
-	keyword_table["return"] = KW_RETURN;
-	keyword_table["void"] = KW_VOID;
+	keyword_table["int"] = Tag::KW_INT;
+	keyword_table["char"] = Tag::KW_CHAR;
+	keyword_table["string"] = Tag::KW_STRING;
+	keyword_table["if"] = Tag::KW_IF;
+	keyword_table["else"] = Tag::KW_ELSE;
+	keyword_table["while"] = Tag::KW_ELSE;
+	keyword_table["return"] = Tag::KW_RETURN;
+	keyword_table["void"] = Tag::KW_VOID;
+	keyword_table["for"] = Tag::KW_FOR;
+
 }
 
 Tag get_keyword_tag(std::string key)
@@ -23,7 +25,7 @@ Tag get_keyword_tag(std::string key)
 	{
 		return keyword_table[key];
 	}
-	return UNKNOWN;
+	return  Tag::UNKNOWN;
 }
 
 void print_error(const char* message)

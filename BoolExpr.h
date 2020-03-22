@@ -13,12 +13,12 @@ public:
         flag 1对应true_list,0对应false_list
         label表示目标标号
     */
-    void back_patch(Function& function, int flag, instr_index label);
-    static void back_patch_list(Function& function, std::vector<instr_index> list, instr_index label);
+    void back_patch(Function& function, int flag, instr_number label);
+    static void back_patch_list(Function& function, std::vector<instr_number> list, instr_number label);
 
     std::string true_label;
     std::string false_label;
-    std::vector<instr_index> true_list;
-    std::vector<instr_index> false_list;
+    std::vector<instr_number> true_list;
+    std::vector<instr_number> false_list;
 };
 

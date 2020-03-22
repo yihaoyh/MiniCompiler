@@ -39,7 +39,7 @@ f:
 main:
 	pushq %rbp
 	movq %rsp, %rbp
-	movq $5 , %rbx
+	movq $2 , %rbx
 	pushq %rbx
 	movq -8(%rbp), %rbx
 	pushq %rbx

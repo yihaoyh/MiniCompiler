@@ -4,7 +4,7 @@ Function::Function(const std::string& fun_name, bool is_declaration, const Type&
 {
     for (auto iter = params.begin(); iter != params.end(); ++iter)
     {
-        sym_table.put_variable(*iter);
+        sym_table_.put_variable(*iter);
     }
 }
 
@@ -16,7 +16,7 @@ Function::Function() : name{ "" }, is_declaration{ "false" }
 /*
  返回指令的标号
 */
-unsigned int Function::add_instruction(InterInstruction& inst)
+instr_number Function::add_instruction(InterInstruction& inst)
 {
     inst.index = inst_vector_.size();
     inst_vector_.push_back(inst);
@@ -45,17 +45,17 @@ unsigned int Function::get_next_instruction()
 
 void Function::put_variable(const Var& var)
 {
-    sym_table.put_variable(var);
+    sym_table_.put_variable(var);
 }
 
 Var Function::get_variable(const std::string& name)
 {
-    return  sym_table.get_variable(name);
+    return  sym_table_.get_variable(name);
 }
 
 Var Function::gen_temp_var(const Type type)
 {
-    Var var  = sym_table.gen_temp_var(type);
+    Var var  = sym_table_.gen_temp_var(type);
     put_variable(var);
     return var;
 }
@@ -65,9 +65,4 @@ std::string Function::gen_label()
     std::stringstream sstream;
     sstream << ".L" << name << label_index_++;
     return sstream.str();
-}
-
-SymTable* Function::get_sym_table()
-{
-    return &sym_table;
 }

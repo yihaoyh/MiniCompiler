@@ -5,25 +5,25 @@ Type tag_to_type(Tag tag)
 	Type type = Type::UNKNOWN;
 	switch (tag)
 	{
-	case KW_INT:
+	case  Tag::KW_INT:
 		type = Type::INT;
 		break;
-	case KW_CHAR:
+	case  Tag::KW_CHAR:
 		type = Type::CHAR;
 		break;
-	case KW_STRING:
+	case  Tag::KW_STRING:
 		type = Type::STRING;
 		break;
-	case LT_NUMBER:
+	case  Tag::LT_NUMBER:
 		type = Type::INT;
 		break;
-	case LT_CHAR:
+	case  Tag::LT_CHAR:
 		type = Type::CHAR;
 		break;
-	case LT_STRING:
+	case  Tag::LT_STRING:
 		type = Type::STRING;
 		break;
-	case KW_VOID:
+	case  Tag::KW_VOID:
 		type = Type::VOID;
 		break;
 	default:

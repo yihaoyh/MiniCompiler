@@ -65,22 +65,22 @@ std::string CodeGen::parse_instruction(const InterInstruction& inst)
     {
     case Operator::OP_ADD:
     case Operator::OP_SUB:
-        if (result.tag != IDENTIFIER)
+        if (result.tag != Tag::IDENTIFIER)
         {
             error("result must be lvalue in add/sub");
             return "";
         }
-        if (arg1.tag != IDENTIFIER && arg1.tag != LT_NUMBER)
+        if (arg1.tag != Tag::IDENTIFIER && arg1.tag != Tag::LT_NUMBER)
         {
             error("arg1 must be number or id in add/sub");
         }
-        if (arg2.tag != IDENTIFIER && arg2.tag != LT_NUMBER)
+        if (arg2.tag != Tag::IDENTIFIER && arg2.tag != Tag::LT_NUMBER)
         {
             error("arg2 must be number or id in add/sub");
         }
         return code + gen_low_op(inst.op, result, arg1, arg2);
     case Operator::OP_ASSIGN:
-        if (result.tag != IDENTIFIER)
+        if (result.tag != Tag::IDENTIFIER)
         {
             error("result must be lvalue in add/sub");
             return "";
@@ -140,7 +140,7 @@ std::string CodeGen::gen_assign(const Var& lval, const Var& rval)
     // 如果不存在，则生成指令 push rbx，并调用Frame::insert_variable向栈帧信息添加一个变量
     std::string code = "";
     std::string str_rval = "";
-    if (lval.tag != IDENTIFIER)
+    if (lval.tag != Tag::IDENTIFIER)
     {
         return "";
     }
@@ -185,7 +185,7 @@ std::string CodeGen::gen_low_op(Operator op, const Var& result, const Var& lval,
         error("invalid operator");
         return "";
     }
-    if (result.tag != IDENTIFIER)
+    if (result.tag != Tag::IDENTIFIER)
     {
         error("result must be identifier");
         return "";
@@ -316,7 +316,7 @@ std::string CodeGen::gen_call(const Var& result, const std::string& fun_name)
     }
     std::stringstream sstream;
     sstream << "\tcall " << fun_name << "\n";
-    if (result.tag == IDENTIFIER)
+    if (result.tag == Tag::IDENTIFIER)
     {
         sstream << "\tmovq %rax, %rbx\n";
         sstream << gen_create_variable(RBX);
@@ -327,7 +327,7 @@ std::string CodeGen::gen_call(const Var& result, const std::string& fun_name)
 
 std::string CodeGen::gen_set_param(const Var& param)
 {
-    if (param.tag != LT_NUMBER && param.tag != IDENTIFIER)
+    if (param.tag != Tag::LT_NUMBER && param.tag != Tag::IDENTIFIER)
     {
         std::string error_msg = "tag of param " + param.name + " must be LT_NUMBER or IDENTIFIER";
         error(error_msg.c_str());
@@ -466,11 +466,11 @@ Var CodeGen::get_var(const Address& address)
     case TEMP_VAR:
         return function_->get_variable(address.value);
     case LITERAL_NUMBER:
-        return Var(LT_NUMBER, "", address.value, Type::INT);
+        return Var(Tag::LT_NUMBER, "", address.value, Type::INT);
     case LITERAL_CHAR:
-        return Var(LT_CHAR, "", address.value, Type::CHAR);
+        return Var(Tag::LT_CHAR, "", address.value, Type::CHAR);
     case LITERAL_STRING:
-        return Var(LT_STRING, "", address.value, Type::STRING);
+        return Var(Tag::LT_STRING, "", address.value, Type::STRING);
     default:
         return Var();
     }
@@ -489,12 +489,12 @@ std::string CodeGen::gen_access_arg(const Var& var, const std::string& reg_name)
         return "";
     }
     std::string str_val;
-    if (var.tag == LT_NUMBER)
+    if (var.tag == Tag::LT_NUMBER)
     {
         str_val = "$" + var.value_string;
         return "\tmovq " + str_val + " , " + reg_name + "\n";
     }
-    else if (var.tag == IDENTIFIER)
+    else if (var.tag == Tag::IDENTIFIER)
     {
         if (!variable_exist_check(var.name))
         {

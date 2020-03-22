@@ -100,15 +100,15 @@ std::string InterInstruction::to_string()
 
 Address var_to_address(const Var& var)
 {
-    if (var.tag == IDENTIFIER)
+    if (var.tag == Tag::IDENTIFIER)
     {
         return Address{ NAME, var.name };
     }
-    else if (var.tag == LT_NUMBER)
+    else if (var.tag == Tag::LT_NUMBER)
     {
         return Address{ LITERAL_NUMBER, var.value_string };
     }
-    return Address{ UNKNOWN, "" };
+    return Address{ EMPTY, "" };
 }
 
 
