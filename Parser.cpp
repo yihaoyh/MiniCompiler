@@ -665,7 +665,7 @@ Var Parser::idexpr(std::string name) {
       // InterInstruction inst = ;
       add_instruction(new InterInstruction(var_to_address(var),
                                            Operator::OP_CALL,
-                                           Address{NAME, name}, Address()));
+                                           Address{LITERAL_STRING, name}, Address()));
     }
   } else {
     var = current_function_->get_variable(name);

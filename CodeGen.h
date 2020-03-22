@@ -49,6 +49,8 @@ class CodeGen {
   std::string gen_if_false_jump(Operator op, const Var& result, const Var& lval,
                                 const Var& rval);
   std::string gen_jump(const Var& result);
+  std::string gen_normal(Operator op, const Var& result, const Var& lval,
+                                const Var& rval);
 
   bool register_check(const std::string& reg_name);
   bool frame_offset_check(const std::string& var_name, int offset);

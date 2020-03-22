@@ -41,10 +41,10 @@ std::string CodeGen::parse_function(const Function& fun) {
 }
 
 std::string CodeGen::parse_instruction(const InterInstruction& inst) {
+  std::string code = "";
   Var result = get_var(inst.result);
   Var arg1 = get_var(inst.arg1);
   Var arg2 = get_var(inst.arg2);
-  std::string code = "";
   if (!inst.label.empty()) {
     code += inst.label + ":\n";
   }
@@ -54,39 +54,8 @@ std::string CodeGen::parse_instruction(const InterInstruction& inst) {
     return code + gen_if_false_jump(inst.op, result, arg1, arg2);
   } else if (inst.type == Inst_Type::JUMP) {
     return code + gen_jump(result);
-  }
-  // normal
-  switch (inst.op) {
-    case Operator::OP_ADD:
-    case Operator::OP_SUB:
-      if (result.tag != Tag::IDENTIFIER) {
-        error("result must be lvalue in add/sub");
-        return "";
-      }
-      if (arg1.tag != Tag::IDENTIFIER && arg1.tag != Tag::LT_NUMBER) {
-        error("arg1 must be number or id in add/sub");
-      }
-      if (arg2.tag != Tag::IDENTIFIER && arg2.tag != Tag::LT_NUMBER) {
-        error("arg2 must be number or id in add/sub");
-      }
-      return code + gen_low_op(inst.op, result, arg1, arg2);
-    case Operator::OP_ASSIGN:
-      if (result.tag != Tag::IDENTIFIER) {
-        error("result must be lvalue in add/sub");
-        return "";
-      }
-      return code + gen_assign(result, arg1);
-    case Operator::OP_SET_PARAM:
-      return code + gen_set_param(arg1);
-    case Operator::OP_CALL:
-      code = code + gen_call(result, inst.arg1.value);
-      return code;
-    case Operator::OP_RETURN:
-      return code + gen_return(arg1);
-    case Operator::OP_IF_JUMP:
-      return code + gen_if_jump(inst.op, result, arg1, arg2);
-    default:
-      return "";
+  } else if (inst.type == Inst_Type::NORMAL) {
+    return code + gen_normal(inst.op, result, arg1, arg2);
   }
 }
 
@@ -305,7 +274,7 @@ std::string CodeGen::gen_set_param(const Var& param) {
 std::string CodeGen::gen_if_jump(Operator op, const Var& result,
                                  const Var& arg1, const Var& arg2) {
   /*
-      步骤：
+      if_jump的生成步骤：
       1 载入arg1到rbx，arg2到rcx
       2 生成cmpq rbx, rcx
       3 根据操作符生成je，jge
@@ -395,6 +364,43 @@ std::string CodeGen::gen_jump(const Var& result) {
   code += "\tjmp " + label + "\n";
   return code;
   return std::string();
+}
+
+/*
+    生成常规语句，例如赋值，运算，函数调用
+*/
+std::string CodeGen::gen_normal(Operator op, const Var& result, const Var& arg1,
+                                const Var& arg2) {
+  std::string code = "";
+  switch (op) {
+    case Operator::OP_ADD:
+    case Operator::OP_SUB:
+      if (result.tag != Tag::IDENTIFIER) {
+        error("result must be lvalue in add/sub");
+        return "";
+      }
+      if (arg1.tag != Tag::IDENTIFIER && arg1.tag != Tag::LT_NUMBER) {
+        error("arg1 must be number or id in add/sub");
+      }
+      if (arg2.tag != Tag::IDENTIFIER && arg2.tag != Tag::LT_NUMBER) {
+        error("arg2 must be number or id in add/sub");
+      }
+      return gen_low_op(op, result, arg1, arg2);
+    case Operator::OP_ASSIGN:
+      if (result.tag != Tag::IDENTIFIER) {
+        error("result must be lvalue in add/sub");
+        return "";
+      }
+      return gen_assign(result, arg1);
+    case Operator::OP_SET_PARAM:
+      return gen_set_param(arg1);
+    case Operator::OP_CALL:
+      return gen_call(result, arg1.value_string);
+    case Operator::OP_RETURN:
+      return gen_return(arg1);
+    default:
+      return "";
+  }
 }
 
 bool CodeGen::register_check(const std::string& reg_name) {
