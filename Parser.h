@@ -1,236 +1,238 @@
+ï»¿#pragma once
+#include <map>
+#include <string>
+#include <vector>
+
+#include "BoolExpr.h"
+#include "Function.h"
+#include "Lexer.h"
+#include "Statement.h"
+#include "SymTable.h"
+#include "Var.h"
+
 /*
-* Óï·¨·ÖÎöÆ÷
+ * è¯­æ³•åˆ†æå™¨
+ */
+class Parser {
+ public:
+  Parser();
+  void begin_parse(const std::string& file_name);
+  void post_parse();
+  void print_instructions();
+
+ private:
+  /*
+      åˆ†ææ•´ä¸ªç¨‹åº <program>-><segment> <program> | Îµ
+  */
+  void program();
+
+  /*
+     ç¨‹åºç‰‡æ®µï¼ŒåŒ…æ‹¬å˜é‡å£°æ˜ã€å®šä¹‰ï¼Œå‡½æ•°å£°æ˜ã€å®šä¹‰ï¼Œå‡½æ•°è°ƒç”¨
+     <segment>-><type><def>
+  */
+  void segment();
+
+  /*
+      ç±»å‹ <type>->KW_INT | KW_CHAR | KW_STRING | KW_VOID
+  */
+  Type type();
+
+  /*
+      å˜é‡ã€å‡½æ•°çš„å£°æ˜æˆ–å®šä¹‰
+      <def>->ID <idtail>
+  */
+  void def(const Type& type);
+
+  /*
+      <idtail>-><varrdef> <deflist> | LPAREN <para> RPAREN <funtail>
+  */
+
+  /*
+      <varrdef>-><init>
+  */
+  Var varrdef(Var result);
+
+  /*
+      <init>-> ASSIGN <expr> | Îµ
+  */
+  Var init(Var result);
+
+  /*
+      <deflist>->COMMA <defdata> <deflist> | SEMICOLON
+  */
+  void deflist();
+
+  /*
+      <defdata>->ID <varrdef>
+  */
+  void defdata(const Type& type);
+
+  /*
+      <paradata>->MUL ID | ID <paradatatail>
+  */
+  void paradata(std::vector<Var>* params);
+
+  /*
+      <paradatatail>->LBRACKET NUM RBRACKET | Îµ
+  */
+  void paradatatail();
+
+  /*
+      <para>-><type> <paradata> <paralist> | Îµ
+  */
+  void para(std::vector<Var>* params);
+
+  /*
+      <block>->LBRACES <subprogram> RBRACES
+  */
+  Statement block();
+
+  /*
+      block ç”±å±€éƒ¨å˜é‡å®šä¹‰æˆ–è€…è¯­å¥ç»„æˆæˆ–è€…ç»ˆç»“ç¬¦ç»„æˆ
+      <subprogram>-><localdef> <subprogram> | <statement> <subprogram> | Îµ
+  */
+  Statement subprogram();
+
+  /*
+      <statement>-><assign> SEMICOLON | KW_RETURN <expr> SEMICOLON | ID ( )
+     SEMICOLON
+  */
+  Statement statement();
+
+  /*
+      <assign>-><item><assigntail> | <expr>
+  */
+  Var assign_expr();
+
+  /*
+      <assign_tail>-> = <assign_expr>
+  */
+  void assign_tail(Var var);
+
+  BoolExpr or_expr();
+
+  BoolExpr or_tail(BoolExpr* expr);
+
+  BoolExpr and_expr();
+
+  BoolExpr and_tail(BoolExpr* expr);
+
+  BoolExpr compare_expr();
+
+  BoolExpr compare_tail(const Var& lval, BoolExpr* expr);
+  /*
+      <localdef>-><type> <defdata> <deflist>
+  */
+  void localdef();
+
+  /*
+      <expr>-><item> <exprtail>
+  */
+  Var expr();
+
+  /*
+      <item>-><factor> <itemtail>
+  */
+  Var item();
+
+  /*
+      <itemtail>-><op_high> <factor> <itemtail> | Îµ
+  */
+  Var itemtail(const Var&);
+
+  /*
+      <op_high>->* | /
+  */
+  Operator op_high();
+
+  /*
+      <factor>->val
+  */
+  Var factor();
+
+  /*
+      <val>-><elem>
+  */
+  Var val();
+
+  /*
+      <elem>->ID | <LPAREN> <expr> <RPAREN> | <literal>
+  */
+  Var elem();
+
+  /*
+      <literal>->NUM | CHAR |STRING
+  */
+  Var literal();
+
+  /*
+      ä¿®å¤é”™è¯¯
+  */
+  void recovery();
+
+  /*
+      å‘å‰ç§»åŠ¨è§£æä¸€ä¸ªtoken
+  */
+  void move_token();
+
+  void funtail(const Type& type, std::string, const std::vector<Var>& params);
+
+  Var idtail(const Type&, std::string);
+
+  Var idexpr(std::string);
+
+  void put_variable(Var var);
+
+  instr_number add_instruction(InterInstruction* instrunction);
+
+  /*
+      å¾€åç§»åŠ¨ä¸€ä¸ªtoken
+  */
+  void back_token();
+
+  /*
+  <operator>
 */
-#pragma once
-#include"Lexer.h"
-#include"Var.h"
-#include"SymTable.h"
-#include"Function.h"
-#include"BoolExpr.h"
-#include"Statement.h"
-class Parser
-{
-public:
-	Parser();
-	void begin_parse(const std::string& file_name);
-	void post_parse();
-	void print_instructions();
-private:
-	/* 
-		·ÖÎöÕû¸ö³ÌĞò <program>-><segment> <program> | ¦Å
-	*/
-	void program();
+  void operator_();
 
-	/* 
-	   ³ÌĞòÆ¬¶Î£¬°üÀ¨±äÁ¿ÉùÃ÷¡¢¶¨Òå£¬º¯ÊıÉùÃ÷¡¢¶¨Òå£¬º¯Êıµ÷ÓÃ
-	   <segment>-><type><def>
-	*/ 
-	void segment();
+  /*
+      <operand>
+  */
+  void operand();
 
-	/*
-		ÀàĞÍ <type>->KW_INT | KW_CHAR | KW_STRING | KW_VOID
-	*/
-	Type type();
+  /*
+      <op_low>->+ | -
+  */
+  Operator op_low();
 
-	/*
-		±äÁ¿¡¢º¯ÊıµÄÉùÃ÷»ò¶¨Òå
-		<def>->ID <idtail>
-	*/
-	void def(const Type& type);
+  Operator op_compare();
 
-	/*
-		<idtail>-><varrdef> <deflist> | LPAREN <para> RPAREN <funtail>
-	*/
-	
-	/*
-		<varrdef>-><init>    
-	*/
-	Var varrdef(Var result);
-	
-	/*
-		<init>-> ASSIGN <expr> | ¦Å
-	*/
-	Var init(Var result);
+  // è¿ç®—è¡¨è¾¾å¼
+  Var alo_expr();
 
-	/*
-		<deflist>->COMMA <defdata> <deflist> | SEMICOLON
-	*/
-	void deflist();
+  Var alo_tail(const Var& var);
 
-	/*
-		<defdata>->ID <varrdef>
-	*/
-	void defdata(const Type& type);
+  bool match(const Tag& tag);
 
-	/*
-		<paradata>->MUL ID | ID <paradatatail>
-	*/
-	void paradata(std::vector<Var>& params);
+  // å‚æ•°ä¼ é€’
+  void para_transit();
 
-	/*
-		<paradatatail>->LBRACKET NUM RBRACKET | ¦Å
-	*/
-	void paradatatail();
+  Function get_function(std::string);
 
-	/*
-		<para>-><type> <paradata> <paralist> | ¦Å
-	*/
-	void para(std::vector<Var>& params);
+  void put_function(Function);
 
-	/*
-		<block>->LBRACES <subprogram> RBRACES
-	*/
-	Statement block();
+  std::vector<Function> get_functions();
 
-	/*
-		block ÓÉ¾Ö²¿±äÁ¿¶¨Òå»òÕßÓï¾ä×é³É»òÕßÖÕ½á·û×é³É
-		<subprogram>-><localdef> <subprogram> | <statement> <subprogram> | ¦Å
-	*/
-	Statement subprogram();
+  // åˆå¹¶è·³è½¬åˆ—è¡¨
+  std::vector<instr_number> merge(std::vector<instr_number> list1,
+                                  std::vector<instr_number> list2);
 
-	/*
-		<statement>-><assign> SEMICOLON | KW_RETURN <expr> SEMICOLON | ID ( ) SEMICOLON
-	*/
-	Statement statement();
-
-	/*
-		<assign>-><item><assigntail> | <expr>
-	*/
-	Var assign_expr();
-
-	/*
-	    <assign_tail>-> = <assign_expr>
-	*/
-	void assign_tail(Var var);
-
-	BoolExpr or_expr();
-
-	BoolExpr or_tail(BoolExpr& expr);
-
-	BoolExpr and_expr();
-
-	BoolExpr and_tail(BoolExpr &expr);
-
-	BoolExpr compare_expr();
-
-	BoolExpr compare_tail(Var &lval, BoolExpr& expr);
-	/*
-		<localdef>-><type> <defdata> <deflist>
-	*/
-	void localdef();
-
-	/*
-		<expr>-><item> <exprtail>
-	*/
-	Var expr();
-
-	/*
-		<item>-><factor> <itemtail>
-	*/
-	Var item();
-
-	/*
-		<itemtail>-><op_high> <factor> <itemtail> | ¦Å
-	*/
-	Var itemtail(const Var&);
-
-	/*
-		<op_high>->* | /
-	*/
-	Operator op_high();
-
-	/*
-		<factor>->val
-	*/
-	Var factor();
-
-	/*
-		<val>-><elem>
-	*/
-	Var val();
-
-	/*
-		<elem>->ID | <LPAREN> <expr> <RPAREN> | <literal>
-	*/
-	Var elem();
-
-	/*
-		<literal>->NUM | CHAR |STRING
-	*/
-	Var literal();
-
-	/*
-		ĞŞ¸´´íÎó
-	*/
-	void recovery();
-
-	/*
-		ÏòÇ°ÒÆ¶¯½âÎöÒ»¸ötoken
-	*/
-	void move_token();
-
-	void funtail(const Type& type, std::string, const std::vector<Var>& params);
-
-	Var idtail(const Type&, std::string);
-
-	Var idexpr(std::string);
-
-	void put_variable(Var var);
-
-	instr_number add_instruction(InterInstruction&& instrunction);
-	
-	instr_number add_instruction(InterInstruction& instrunction);
-
-	/*
-		ÍùºóÒÆ¶¯Ò»¸ötoken
-	*/
-	void back_token();
-
-	/*
-	<operator>
-*/
-	void operator_();
-
-	/*
-		<operand>
-	*/
-	void operand();
-
-	/*
-		<op_low>->+ | -
-	*/
-	Operator op_low();
-
-	Operator op_compare();
-
-	// ÔËËã±í´ïÊ½
-	Var alo_expr();
-
-	Var alo_tail(const Var& var);
-
-	//BoolExpr bool_expr();
-
-	bool match(const Tag& tag);
-
-	// ²ÎÊı´«µİ
-	void para_transit(); 
-
-	Function get_function(std::string);
-
-	void put_function(Function);
-
-	std::vector<Function> get_functions();
-
-	std::vector<instr_number> merge(std::vector<instr_number>list1, std::vector<instr_number>list2);
-
-	Token token_look_;
-	Lexer lexer_;
-	//SymTable sym_table_;
-	Function* current_function_;
-	std::vector<Token> token_stack_;
-	std::vector<Function> functions_;
-	int index;
-	std::map<std::string, Function> function_table_; // º¯Êı±í
+ private:
+  Token& token_look_ = Token::unknown_token;
+  Lexer lexer_;
+  Function* current_function_;
+  std::vector<Token> token_stack_;
+  std::vector<Function> functions_;
+  int index;
+  std::map<std::string, Function> function_table_;  // å‡½æ•°è¡¨
 };
-
-

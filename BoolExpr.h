@@ -1,24 +1,25 @@
-#pragma once
-#include<string>
-#include<vector>
-#include"InterInstruction.h"
-#include"Function.h"
-#include"Common.h"
-class BoolExpr
-{
-public:
-    /* 
-        »ØÌîÌø×ªÁĞ±í
-        function ±íÊ¾µ±Ç°º¯Êı
-        flag 1¶ÔÓ¦true_list,0¶ÔÓ¦false_list
-        label±íÊ¾Ä¿±ê±êºÅ
-    */
-    void back_patch(Function& function, int flag, instr_number label);
-    static void back_patch_list(Function& function, std::vector<instr_number> list, instr_number label);
+ï»¿#pragma once
+#include <string>
+#include <vector>
 
-    std::string true_label;
-    std::string false_label;
-    std::vector<instr_number> true_list;
-    std::vector<instr_number> false_list;
+#include "Common.h"
+#include "Function.h"
+#include "InterInstruction.h"
+class BoolExpr {
+ public:
+  /*
+      å›å¡«è·³è½¬åˆ—è¡¨
+      function è¡¨ç¤ºå½“å‰å‡½æ•°
+      flag 1å¯¹åº”true_list,0å¯¹åº”false_list
+      labelè¡¨ç¤ºç›®æ ‡æ ‡å·
+  */
+  void back_patch(Function* function, int flag, instr_number label);
+  static void back_patch_list(Function* function,
+                              const std::vector<instr_number>& list,
+                              instr_number label);
+
+  std::string true_label;
+  std::string false_label;
+  std::vector<instr_number> true_list;
+  std::vector<instr_number> false_list;
 };
-

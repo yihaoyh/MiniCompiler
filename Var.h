@@ -1,30 +1,28 @@
-#pragma once
-#include<string>
-#include"Lexer.h"
-#include"Type.h"
-enum class VarType
-{
-	VAR, // ±äÁ¿
-	TEMP, // ÁÙÊ±±äÁ¿
-	//LITERAL // ×ÖÃæÁ¿
+ï»¿#pragma once
+#include <string>
+
+#include "Lexer.h"
+#include "Type.h"
+enum class VarType {
+  VAR,   // å˜é‡
+  TEMP,  // ä¸´æ—¶å˜é‡
+         // LITERAL // å­—é¢é‡
 };
 
 /*
-	±äÁ¿Àà
+        å˜é‡ç±»
 */
-class Var
-{
-public :
-	static Var create_number(std::string value);
-	static Var create_id(std::string name, Type type);
-	Var();
-	Var(Tag, std::string, std::string, Type type);
-	Var& operator =(const Var& ref);
+class Var {
+ public:
+  static Var create_number(std::string value);
+  static Var create_id(std::string name, Type type);
+  Var();
+  Var(Tag, std::string, std::string, Type type);
+  Var &operator=(const Var &ref);
 
-	Type type; // ±äÁ¿ÀàĞÍ
-	Tag tag; // ±äÁ¿±êÇ©
-	std::string name; // ±äÁ¿Ãû³Æ
-	std::string value_string; // ÖµµÄ×Ö·û´®ĞÎÊ½
-	static Var default_;
+  Type type;                 // å˜é‡ç±»å‹
+  Tag tag;                   // å˜é‡æ ‡ç­¾
+  std::string name;          // å˜é‡åç§°
+  std::string value_string;  // å€¼çš„å­—ç¬¦ä¸²å½¢å¼
+  static Var default_;
 };
-

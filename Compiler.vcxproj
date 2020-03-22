@@ -148,7 +148,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="BoolExpr.cpp" />
-    <ClCompile Include="Call.cpp" />
     <ClCompile Include="CodeGen.cpp" />
     <ClCompile Include="Common.cpp" />
     <ClCompile Include="Compiler.cpp" />
@@ -166,7 +165,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BoolExpr.h" />
-    <ClInclude Include="Call.h" />
     <ClInclude Include="CodeGen.h" />
     <ClInclude Include="Common.h" />
     <ClInclude Include="Frame.h" />

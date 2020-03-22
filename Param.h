@@ -1,16 +1,11 @@
-#pragma once
-#include"Var.h"
-class Param
-{
-public:
-	Var var;
-	bool isEscape;    // ÊÇ·ñÌÓÒİ
+ï»¿#pragma once
+#include "Var.h"
+class Param {
+ public:
+  Var var;
+  bool isEscape;  // æ˜¯å¦é€ƒé€¸
 
-	Param(Var var, bool isEscape) :var{ var },isEscape{ isEscape }
-	{
-	}
+  Param(Var var, bool isEscape) : var{var}, isEscape{isEscape} {}
 
-	Param& operator = (const Param& ref);
-
+  Param& operator=(const Param& ref);
 };
-

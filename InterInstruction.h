@@ -1,14 +1,13 @@
-#pragma once
-#include<string>
-#include<vector>
-#include"Var.h"
-#include"Common.h"
-#include"Call.h"
+ï»¿#pragma once
+#include <string>
+#include <vector>
+
+#include "Common.h"
+#include "Var.h"
 
 /*
- * ±íÊ¾ÈıµØÖ·ÂëµÄµØÖ·
+ * è¡¨ç¤ºä¸‰åœ°å€ç çš„åœ°å€
  */
-
 constexpr auto EMPTY = -1;
 constexpr auto NAME = 0;
 constexpr auto TEMP_VAR = 1;
@@ -16,47 +15,44 @@ constexpr auto LITERAL_NUMBER = 2;
 constexpr auto LITERAL_CHAR = 3;
 constexpr auto LITERAL_STRING = 4;
 
-struct Address_
-{
-    int type = -1;
-    std::string value;   // ÖµµÄ×Ö·û´®ĞÎÊ½£¬typeÎªNAMEÊ±ÎªÃû×Ö£¬Îª×ÖÃæÁ¿Ê±ĞèÒª´Ó×Ö·û´®½øĞĞ×ª»»¡£
+struct Address_ {
+  int type = -1;
+  /*
+   å€¼çš„å­—ç¬¦ä¸²å½¢å¼ï¼Œtypeä¸ºNAMEæ—¶ä¸ºåå­—ï¼Œä¸ºå­—é¢é‡æ—¶éœ€è¦ä»å­—ç¬¦ä¸²è¿›è¡Œè½¬æ¢ã€‚
+  */
+  std::string value;
 };
 typedef Address_ Address;
 
-enum class Inst_Type
-{
-    NORMAL,
-    IF_JUMP,
-    IF_FALSE_JUMP,
-    JUMP
-};
+enum class Inst_Type { NORMAL, IF_JUMP, IF_FALSE_JUMP, JUMP };
 
 /*
- * ÓÃËÄÔªÊ½±íÊ¾ÖĞ¼äÖ¸Áî
+ * ç”¨å››å…ƒå¼è¡¨ç¤ºä¸­é—´æŒ‡ä»¤
  */
-class InterInstruction
-{
-public:
-    static InterInstruction gen_if_jump(Operator op, Address arg1, Address arg2);
-    static InterInstruction gen_if_false_jump(Operator op, Address arg1, Address arg2);
-    static InterInstruction gen_jump();
-    InterInstruction(const Address result, const Operator op, const Address arg1, const Address arg2);
-    InterInstruction(const Inst_Type type, const Address result, const Operator op, const Address arg1, const Address arg2);
-    static std::string type_to_string(const Inst_Type& type);
-    std::string to_string();
+class InterInstruction {
+ public:
+  static InterInstruction gen_if_jump(Operator op, Address arg1, Address arg2);
+  static InterInstruction gen_if_false_jump(Operator op, Address arg1,
+                                            Address arg2);
+  static InterInstruction gen_jump();
+  InterInstruction(const Address result, const Operator op, const Address arg1,
+                   const Address arg2);
+  InterInstruction(const Inst_Type type, const Address result,
+                   const Operator op, const Address arg1, const Address arg2);
+  static std::string type_to_string(const Inst_Type& type);
+  std::string to_string();
 
-    Address result;
-    Operator op;
-    Address arg1;
-    Address arg2;
-    Call call;
-    unsigned int index = 0;  // Ö¸ÁîĞòºÅ
-    std::string label; // Ö¸Áî±êºÅ
-    std::vector<unsigned int> next_list;
-    Inst_Type type;
-    bool removed = false;
-    virtual ~InterInstruction() {};
+  Address result;
+  Operator op;
+  Address arg1;
+  Address arg2;
+  // Call call;
+  unsigned int index = 0;  // æŒ‡ä»¤åºå·
+  std::string label;       // æŒ‡ä»¤æ ‡å·
+  std::vector<unsigned int> next_list;
+  Inst_Type type;
+  bool removed = false;
+  virtual ~InterInstruction(){}
 };
 
 Address var_to_address(const Var& var);
-

@@ -1,81 +1,65 @@
-#include "Frame.h"
+ï»¿#include "Frame.h"
+
 #include "Utils.h"
 /*
- * ÔÚÕ»Ö¡ĞÅÏ¢ÖĞ²åÈëÒ»¸ö±äÁ¿£¬²»¿ÉÖØ¸´²åÈë
- * name ±äÁ¿Ãû³Æ
- * length ±äÁ¿µÄ³¤¶È
+ * åœ¨æ ˆå¸§ä¿¡æ¯ä¸­æ’å…¥ä¸€ä¸ªå˜é‡ï¼Œä¸å¯é‡å¤æ’å…¥
+ * name å˜é‡åç§°
+ * length å˜é‡çš„é•¿åº¦
  */
-void Frame::add_local(std::string name, unsigned char length)
-{
-    if (name.empty())
-    {
-        return;
-    }
-    if (length <= 0)
-    {
-        return;
-    }
-    if (var_offset_table.find(name) != var_offset_table.end())
-    {
-        return;
-    }
-    frame_offset_ -= length;
-    var_offset_table[name] = frame_offset_;
+void Frame::add_local(std::string name, unsigned char length) {
+  if (name.empty()) {
+    return;
+  }
+  if (length <= 0) {
+    return;
+  }
+  if (var_offset_table.find(name) != var_offset_table.end()) {
+    return;
+  }
+  frame_offset_ -= length;
+  var_offset_table[name] = frame_offset_;
 }
 
 /*
-    Ìí¼ÓÒ»¸ö²ÎÊıĞÅÏ¢
-    name  ²ÎÊıÃû
-    offset ²ÎÊıÆ«ÒÆ
+    æ·»åŠ ä¸€ä¸ªå‚æ•°ä¿¡æ¯
+    name  å‚æ•°å
+    offset å‚æ•°åç§»
  */
-void Frame::add_param_in(std::string name, char offset)
-{
-    // ²ÎÊıµÄÆ«ÒÆÁ¿ĞèÒª´óÓÚ8
-    if (offset <= 8)
-    {
-        error("the offset of parameter must greater than 8");
-        return;
-    }
-    var_offset_table[name] = offset;
-
+void Frame::add_param_in(std::string name, char offset) {
+  // å‚æ•°çš„åç§»é‡éœ€è¦å¤§äº8
+  if (offset <= 8) {
+    error("the offset of parameter must greater than 8");
+    return;
+  }
+  var_offset_table[name] = offset;
 }
 
-void Frame::add_param_out(unsigned char length)
-{
-    if (length <= 0)
-    {
-        return;
-    }
-    frame_offset_ -= length;
+void Frame::add_param_out(unsigned char length) {
+  if (length <= 0) {
+    return;
+  }
+  frame_offset_ -= length;
 }
 
 /*
- * ·µ»Ø±äÁ¿ÊÇ·ñ´æÔÚ
+ * è¿”å›å˜é‡æ˜¯å¦å­˜åœ¨
  */
-bool Frame::is_variable_exists(std::string name)
-{
-    return (var_offset_table.find(name) != var_offset_table.end());
+bool Frame::is_variable_exists(std::string name) {
+  return (var_offset_table.find(name) != var_offset_table.end());
 }
 
 /*
- * ·µ»Ø±äÁ¿Ïà¶ÔÓÚÕ»Ö¡µØÖ·µÄÆ«ÒÆ³¤¶È£¬Èç¹û±äÁ¿²»´æÔÚ£¬·µ»Ø-1
+ * è¿”å›å˜é‡ç›¸å¯¹äºæ ˆå¸§åœ°å€çš„åç§»é•¿åº¦ï¼Œå¦‚æœå˜é‡ä¸å­˜åœ¨ï¼Œè¿”å›-1
  */
-long Frame::get_variable_offset(std::string name)
-{
-    if (var_offset_table.find(name) != var_offset_table.end())
-    {
-        return var_offset_table[name];
-    }
-    else
-    {
-        return 0;
-    }
+int Frame::get_variable_offset(std::string name) {
+  if (var_offset_table.find(name) != var_offset_table.end()) {
+    return var_offset_table[name];
+  } else {
+    return 0;
+  }
 }
 
 /*
-    »ñÈ¡Õ»Ö¡µÄ³¤¶È£¬ÒòÎª´æ·Å±¾µØ±äÁ¿ÉêÇëÁË¿Õ¼ä£¬ËùÒÔ¹ı³ÌÍË³öÊ±ÒªÊÍ·ÅÕâĞ©¿Õ¼ä
+    è·å–æ ˆå¸§çš„é•¿åº¦ï¼Œå› ä¸ºå­˜æ”¾æœ¬åœ°å˜é‡ç”³è¯·äº†ç©ºé—´ï¼Œæ‰€ä»¥è¿‡ç¨‹é€€å‡ºæ—¶è¦é‡Šæ”¾è¿™äº›ç©ºé—´
 */
-long Frame::get_frame_length()
-{
-    return -frame_offset_;
-}
+int Frame::get_frame_length() { return -frame_offset_; }

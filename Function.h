@@ -1,31 +1,33 @@
-#pragma once
-#include<vector>
-#include<string>
-#include"Var.h"
-#include"SymTable.h"
-#include"InterInstruction.h"
-class Function
-{
-public:
-	Function(const std::string& fun_name, bool is_declaration, const Type& type, const std::vector<Var>& params);
-	Function();
-    unsigned int add_instruction(InterInstruction& inst);
-	InterInstruction& get_instruction(unsigned int index);
-	std::vector<InterInstruction>& get_instructions();
-	const std::vector<Var> get_params();
-	unsigned int get_next_instruction();
-	void put_variable(const Var& var);
-	Var get_variable(const std::string& name);
-	Var gen_temp_var(const Type type);
-	std::string gen_label();
+ï»¿#pragma once
+#include <string>
+#include <vector>
 
-	bool is_declaration;	// true±íÊ¾ÉùÃ÷£¬false±íÊ¾¶¨Òå
-	std::string name;		// º¯ÊıÃû³Æ
-	Type return_type = Type::UNKNOWN; 
-private:
-	SymTable sym_table_;
-	std::vector<Var> params_;
-	std::vector<InterInstruction> inst_vector_;
-	unsigned int label_index_ = 0;
+#include "InterInstruction.h"
+#include "SymTable.h"
+#include "Var.h"
+class Function {
+ public:
+  Function(const std::string& fun_name, bool is_declaration, const Type& type,
+           const std::vector<Var>& params);
+  Function();
+  unsigned int add_instruction(InterInstruction* inst);
+  InterInstruction& get_instruction(unsigned int index);
+  std::vector<InterInstruction>& get_instructions();
+  const std::vector<InterInstruction>& get_const_instructions() const;
+  const std::vector<Var> get_params() const;
+  unsigned int get_next_instruction();
+  void put_variable(const Var& var);
+  const Var get_variable(const std::string& name) const;
+  Var gen_temp_var(const Type type);
+  std::string gen_label();
+
+  bool is_declaration;  // trueè¡¨ç¤ºå£°æ˜ï¼Œfalseè¡¨ç¤ºå®šä¹‰
+  std::string name;     // å‡½æ•°åç§°
+  Type return_type = Type::UNKNOWN;
+
+ private:
+  SymTable sym_table_;
+  std::vector<Var> params_;
+  std::vector<InterInstruction> inst_vector_;
+  unsigned int label_index_ = 0;
 };
-

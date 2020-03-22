@@ -1,6 +1,9 @@
-#include "CodeGen.h"
-#include <sstream>
+ï»¿#include "CodeGen.h"
+
 #include <assert.h>
+
+#include <sstream>
+
 #include "Common.h"
 #include "Utils.h"
 
@@ -11,556 +14,486 @@ const std::string RAX = "%rax";
 const std::string RBX = "%rbx";
 const std::string RCX = "%rcx";
 
-std::string CodeGen::parse_functions(std::vector<Function> functions)
-{
-    std::string code = "";
-    for (auto iter = functions.begin(); iter != functions.end(); ++iter)
-    {
-        function_ = &(*iter);
-        curr_frame_ = Frame(nullptr, iter->name, iter->get_params());
-        parse_params();
-        code += parse_function(*function_);
-    }
-    return code;
+std::string CodeGen::parse_functions(const std::vector<Function>& functions) {
+  std::string code = "";
+  for (auto iter = functions.cbegin(); iter != functions.cend(); ++iter) {
+    function_ = &(*iter);
+    curr_frame_ = Frame(nullptr, iter->name, iter->get_params());
+    parse_params();
+    code += parse_function(*function_);
+  }
+  return code;
 }
 
-std::string CodeGen::parse_function(Function& fun)
-{
-    std::vector<InterInstruction> inst_list = fun.get_instructions();
-    std::string code = "";
-    code += gen_header(curr_frame_.fun_name);
-    code += gen_enter_proc();
-    for (auto iter = inst_list.begin(); iter != inst_list.end(); ++iter)
-    {
-        code += parse_instruction(*iter);
-    }
-    code += gen_exit_proc();
-    return code;
+std::string CodeGen::parse_function(const Function& fun) {
+  std::vector<InterInstruction> inst_list = fun.get_const_instructions();
+  std::string code = "";
+  code += gen_header(curr_frame_.fun_name);
+  code += gen_enter_proc();
+  for (auto iter = inst_list.begin(); iter != inst_list.end(); ++iter) {
+    code += parse_instruction(*iter);
+  }
+  code += gen_exit_proc();
+  return code;
 }
 
-std::string CodeGen::parse_instruction(const InterInstruction& inst)
-{
-    Var result = get_var(inst.result);
-    Var arg1 = get_var(inst.arg1);
-    Var arg2 = get_var(inst.arg2);
-    std::string code = "";
-    if (!inst.label.empty())
-    {
-        code += inst.label + ":\n";
-    }
-    if (inst.type == Inst_Type::IF_JUMP)
-    {
-        return code + gen_if_jump(inst.op, result, arg1, arg2);
-    }
-    else if (inst.type == Inst_Type::IF_FALSE_JUMP)
-    {
-        return code + gen_if_false_jump(inst.op, result, arg1, arg2);
-    }
-    else if (inst.type == Inst_Type::JUMP)
-    {
-        return code + gen_jump(result);
-    }
-    // normal
-    switch (inst.op)
-    {
+std::string CodeGen::parse_instruction(const InterInstruction& inst) {
+  Var result = get_var(inst.result);
+  Var arg1 = get_var(inst.arg1);
+  Var arg2 = get_var(inst.arg2);
+  std::string code = "";
+  if (!inst.label.empty()) {
+    code += inst.label + ":\n";
+  }
+  if (inst.type == Inst_Type::IF_JUMP) {
+    return code + gen_if_jump(inst.op, result, arg1, arg2);
+  } else if (inst.type == Inst_Type::IF_FALSE_JUMP) {
+    return code + gen_if_false_jump(inst.op, result, arg1, arg2);
+  } else if (inst.type == Inst_Type::JUMP) {
+    return code + gen_jump(result);
+  }
+  // normal
+  switch (inst.op) {
     case Operator::OP_ADD:
     case Operator::OP_SUB:
-        if (result.tag != Tag::IDENTIFIER)
-        {
-            error("result must be lvalue in add/sub");
-            return "";
-        }
-        if (arg1.tag != Tag::IDENTIFIER && arg1.tag != Tag::LT_NUMBER)
-        {
-            error("arg1 must be number or id in add/sub");
-        }
-        if (arg2.tag != Tag::IDENTIFIER && arg2.tag != Tag::LT_NUMBER)
-        {
-            error("arg2 must be number or id in add/sub");
-        }
-        return code + gen_low_op(inst.op, result, arg1, arg2);
+      if (result.tag != Tag::IDENTIFIER) {
+        error("result must be lvalue in add/sub");
+        return "";
+      }
+      if (arg1.tag != Tag::IDENTIFIER && arg1.tag != Tag::LT_NUMBER) {
+        error("arg1 must be number or id in add/sub");
+      }
+      if (arg2.tag != Tag::IDENTIFIER && arg2.tag != Tag::LT_NUMBER) {
+        error("arg2 must be number or id in add/sub");
+      }
+      return code + gen_low_op(inst.op, result, arg1, arg2);
     case Operator::OP_ASSIGN:
-        if (result.tag != Tag::IDENTIFIER)
-        {
-            error("result must be lvalue in add/sub");
-            return "";
-        }
-        return code + gen_assign(result, arg1);
+      if (result.tag != Tag::IDENTIFIER) {
+        error("result must be lvalue in add/sub");
+        return "";
+      }
+      return code + gen_assign(result, arg1);
     case Operator::OP_SET_PARAM:
-        return code + gen_set_param(arg1);
+      return code + gen_set_param(arg1);
     case Operator::OP_CALL:
-        code = code + gen_call(result, inst.arg1.value);
-        return code;
+      code = code + gen_call(result, inst.arg1.value);
+      return code;
     case Operator::OP_RETURN:
-        return code + gen_return(arg1);
+      return code + gen_return(arg1);
     case Operator::OP_IF_JUMP:
-        return code + gen_if_jump(inst.op, result, arg1, arg2);
+      return code + gen_if_jump(inst.op, result, arg1, arg2);
     default:
-        return "";
-    }
+      return "";
+  }
 }
 
-std::string CodeGen::gen_header(const std::string& fun_name)
-{
-    if (fun_name.empty())
-    {
-        return "";
-    }
-    std::stringstream sstream;
-    if (fun_name == "main")
-    {
-        sstream << ".LC0:\n" \
-            "\t.string	\"%d\\n\"\n"\
-            "\t.text\n";
-    }
-    else
-    {
-        sstream << "\t.text\n";
-    }
-    sstream << "\t.globl  " << fun_name << "\n";
-    sstream << fun_name << ":" << "\n";
-    return sstream.str();
+std::string CodeGen::gen_header(const std::string& fun_name) {
+  if (fun_name.empty()) {
+    return "";
+  }
+  std::stringstream sstream;
+  if (fun_name == "main") {
+    sstream << ".LC0:\n"
+               "\t.string	\"%d\\n\"\n"
+               "\t.text\n";
+  } else {
+    sstream << "\t.text\n";
+  }
+  sstream << "\t.globl  " << fun_name << "\n";
+  sstream << fun_name << ":"
+          << "\n";
+  return sstream.str();
 }
 
 /*
- * Éú³É¸³ÖµÖ¸Áî£¬Îª¼õÉÙ¹¤×÷Á¿£¬Ö»Ö§³Ö64Î»ÕûĞÎ
- * lval ×óÖµ£¬ÓÃrbx¼Ä´æÆ÷
- * rval ÓÒÖµ£¬ÓÃrcx¼Ä´æÆ÷»òÕßÁ¢¼´Êı
- * ¹Ø¼üÖ¸ÁîĞÎÊ½ÀàËÆ mov %rcx, %rbx »òÕß mov $10, %rbx
-*/
-std::string CodeGen::gen_assign(const Var& lval, const Var& rval)
-{
-    // ÅĞ¶ÏrvalÊÇ±äÁ¿»¹ÊÇ×ÖÃæÁ¿
-    // Èç¹ûÊÇ×ÖÃæÁ¿£¬Éú³É×ÖÃæÁ¿×Ö·û´®ĞÎÊ½Èç str_rval = "$10"
-    // Èç¹ûÊÇ±äÁ¿£¬ÔòÅĞ¶Ï¸Ã±äÁ¿ÔÚÕ»Ö¡ĞÅÏ¢ÖĞÊÇ·ñ´æÔÚ¡£
-    // Èç¹û´æÔÚ£¬ÔòÉú³ÉÒ»ÌõÖ¸Áî£¬¸ÃÖ¸Áî¸ù¾İ±äÁ¿µÄÆ«ÒÆµØÖ·£¬¶ÁÈëµ½ecx¼Ä´æÆ÷ÖĞ£¬²¢Ê¹str_rval = "%rcx"
-    // Èç¹û²»´æÔÚ£¬Ôò·µ»Ø
-    // Éú³ÉÖ¸Áî movq $str_rval, %rbx
-    // È»ºóÅĞ¶ÏlvalÊÇ·ñ´æÔÚÓÚÕ»Ö¡ĞÅÏ¢ÖĞ£¬Èç¹û´æÔÚ£¬ÔòÉú³ÉÖ¸Áî½«rbxĞ´Èëµ½ÏàÓ¦ÄÚ´æÖĞ¡£
-    // Èç¹û²»´æÔÚ£¬ÔòÉú³ÉÖ¸Áî push rbx£¬²¢µ÷ÓÃFrame::insert_variableÏòÕ»Ö¡ĞÅÏ¢Ìí¼ÓÒ»¸ö±äÁ¿
-    std::string code = "";
-    std::string str_rval = "";
-    if (lval.tag != Tag::IDENTIFIER)
-    {
-        return "";
-    }
-    code += gen_access_arg(rval, RBX);
-    if (curr_frame_.is_variable_exists(lval.name))
-    {
-        long offset = curr_frame_.get_variable_offset(lval.name);
-        if (!frame_offset_check(lval.name, offset))
-        {
-            return "";
-        }
-        code += gen_save_variable(RBX, offset);
-    }
-    else
-    {
-        code += gen_create_variable(RBX);
-        curr_frame_.add_local(lval.name, get_type_length(lval.type));
-    }
-    return code;
-}
-
-/*
- * Éú³É¼Ó/¼õ·¨Ö¸Áî£¬Îª¼õÉÙ¹¤×÷Á¿£¬Ö»Ö§³Ö64Î»ÕûĞÎ
- * result ½á¹û£¬±ØĞëÎª±äÁ¿
- * lval ×óÖµ
- * rval ÓÒÖµ
+ * ç”Ÿæˆèµ‹å€¼æŒ‡ä»¤ï¼Œä¸ºå‡å°‘å·¥ä½œé‡ï¼Œåªæ”¯æŒ64ä½æ•´å½¢
+ * lval å·¦å€¼ï¼Œç”¨rbxå¯„å­˜å™¨
+ * rval å³å€¼ï¼Œç”¨rcxå¯„å­˜å™¨æˆ–è€…ç«‹å³æ•°
+ * å…³é”®æŒ‡ä»¤å½¢å¼ç±»ä¼¼ mov %rcx, %rbx æˆ–è€… mov $10, %rbx
  */
-std::string CodeGen::gen_low_op(Operator op, const Var& result, const Var& lval, const Var& rval)
-{
-    // ÅĞ¶ÏresultµÄtagÊÇ·ñÎªID£¬Èô²»ÊÇ£¬Ôò·µ»Ø
-    // Èç¹ûlvalÊÇÕûĞÎ×ÖÃæÁ¿£¬Ôòstr_lvalÎª"$number"
-    // ·ñÔò¸ù¾İÕ»Ö¡ĞÅÏ¢£¬Éú³ÉÒ»ÌõÖ¸Áî£¬¸ÃÖ¸Áî´ÓÄÚ´æÖĞ¶ÁÈ¡lvalµÄÖµµ½rbx, str_lvalÉèÖÃÎª"%rbx"¡£ÈôÕ»Ö¡ÖĞ²»´æÔÚ¸ÃĞÅÏ¢£¬Ôò·µ»Ø¡£
-    // Í¬Ñù´¦Àírval£¬Ö»²»¹ı¼Ä´æÆ÷¸ÄÎªrcx.
-    // Éú³ÉÖ¸Áîadd %rbx, %rcx
-    // ´ÓÕ»Ö¡ĞÅÏ¢ÖĞ²éÕÒresult£¬Èç¹û²»´æÔÚ£¬ÔòÉú³ÉÒ»Ìõ´´½¨±äÁ¿µÄÖ¸Áî¡£Èç¹û´æÔÚ£¬ÔòÉú³ÉÒ»ÌõÏòÕ»Ğ´ÈëµÄÖ¸Áî¡£
-    std::string code = "";
-    std::string str_lval = "";
-    std::string str_rval = "";
-    std::string str_op;
-    if (!(op == Operator::OP_ADD || op == Operator::OP_SUB))
-    {
-        error("invalid operator");
-        return "";
+std::string CodeGen::gen_assign(const Var& lval, const Var& rval) {
+  // åˆ¤æ–­rvalæ˜¯å˜é‡è¿˜æ˜¯å­—é¢é‡
+  // å¦‚æœæ˜¯å­—é¢é‡ï¼Œç”Ÿæˆå­—é¢é‡å­—ç¬¦ä¸²å½¢å¼å¦‚ str_rval = "$10"
+  // å¦‚æœæ˜¯å˜é‡ï¼Œåˆ™åˆ¤æ–­è¯¥å˜é‡åœ¨æ ˆå¸§ä¿¡æ¯ä¸­æ˜¯å¦å­˜åœ¨ã€‚
+  // å¦‚æœå­˜åœ¨ï¼Œåˆ™ç”Ÿæˆä¸€æ¡æŒ‡ä»¤ï¼Œè¯¥æŒ‡ä»¤æ ¹æ®å˜é‡çš„åç§»åœ°å€ï¼Œè¯»å…¥åˆ°ecxå¯„å­˜å™¨ä¸­ï¼Œå¹¶ä½¿str_rval
+  // = "%rcx" å¦‚æœä¸å­˜åœ¨ï¼Œåˆ™è¿”å› ç”ŸæˆæŒ‡ä»¤ movq $str_rval, %rbx
+  // ç„¶ååˆ¤æ–­lvalæ˜¯å¦å­˜åœ¨äºæ ˆå¸§ä¿¡æ¯ä¸­ï¼Œå¦‚æœå­˜åœ¨ï¼Œåˆ™ç”ŸæˆæŒ‡ä»¤å°†rbxå†™å…¥åˆ°ç›¸åº”å†…å­˜ä¸­ã€‚
+  // å¦‚æœä¸å­˜åœ¨ï¼Œåˆ™ç”ŸæˆæŒ‡ä»¤ push
+  // rbxï¼Œå¹¶è°ƒç”¨Frame::insert_variableå‘æ ˆå¸§ä¿¡æ¯æ·»åŠ ä¸€ä¸ªå˜é‡
+  std::string code = "";
+  std::string str_rval = "";
+  if (lval.tag != Tag::IDENTIFIER) {
+    return "";
+  }
+  code += gen_access_arg(rval, RBX);
+  if (curr_frame_.is_variable_exists(lval.name)) {
+    int offset = curr_frame_.get_variable_offset(lval.name);
+    if (!frame_offset_check(lval.name, offset)) {
+      return "";
     }
-    if (result.tag != Tag::IDENTIFIER)
-    {
-        error("result must be identifier");
-        return "";
-    }
-    code += gen_access_arg(lval, RBX);
-    code += gen_access_arg(rval, RCX);
-    if (op == Operator::OP_ADD)
-    {
-        str_op = "\taddq";
-    }
-    else
-    {
-        str_op = "\tsubq";
-    }
-    code += str_op + " %rcx, %rbx\n";
-    if (curr_frame_.is_variable_exists(result.name))
-    {
-        long offset = curr_frame_.get_variable_offset(result.name);
-        if (offset == 0)
-        {
-            std::stringstream sstream;
-            sstream << "var " << result.name << " offset is 0";
-            print_error(sstream.str().c_str());
-            return "";
-        }
-        code += gen_save_variable(RBX, offset);
-    }
-    else
-    {
-        code += gen_create_variable(RBX);
-        curr_frame_.add_local(result.name, get_type_length(result.type));
-    }
-    return code;
+    code += gen_save_variable(RBX, offset);
+  } else {
+    code += gen_create_variable(RBX);
+    curr_frame_.add_local(lval.name, get_type_length(lval.type));
+  }
+  return code;
 }
 
 /*
-    Éú³É½øÈë¹ı³ÌÊ±µÄ´úÂë
-*/
-std::string CodeGen::gen_enter_proc()
-{
-    return "\tpushq %rbp\n"\
-        "\tmovq %rsp, %rbp\n";
-}
-
-/*
-    Éú³ÉÍË³ö¹ı³ÌÊ±µÄ´úÂë£¬Òª½«Õ»ÍË³ö
-*/
-std::string CodeGen::gen_exit_proc()
-{
-    /*
-        ÍË³öÁÙÊ±·ÖÅäµÄÕ»Ö¡¿Õ¼ä
-    */
-    std::stringstream sstream;
-    sstream << ".end_" <<function_->name <<":\n";
-    sstream << "\tsubq %rsp, %rbp\n";
-    sstream << "\taddq %rbp, %rsp\n";
-    sstream << "\tpopq %rbp\n"\
-               "\tret\n";
-    return sstream.str();
-}
-
-/*
-    Éú³Éreturn·µ»ØÖµ£¬½«Öµ¸³¸ørax£¬
-*/
-std::string CodeGen::gen_return(const Var& result)
-{
-    return gen_access_arg(result, RAX) + "\tjmp .end_" + function_->name + "\n";
-}
-
-/*
- * Éú³ÉÒ»Ìõ´ÓÄÚ´æÖĞÔØÈë±äÁ¿µ½¼Ä´æÆ÷µÄÖ¸Áî
- * reg_name ¼Ä´æÆ÷Ãû³Æ {"%rbx", "%rcx"}
- * offset Ïà¶ÔÓÚbspµÄÆ«ÒÆµØÖ·
+ * ç”ŸæˆåŠ /å‡æ³•æŒ‡ä»¤ï¼Œä¸ºå‡å°‘å·¥ä½œé‡ï¼Œåªæ”¯æŒ64ä½æ•´å½¢
+ * result ç»“æœï¼Œå¿…é¡»ä¸ºå˜é‡
+ * lval å·¦å€¼
+ * rval å³å€¼
  */
-std::string CodeGen::gen_load_variable(const std::string& reg_name, long offset)
-{
-    if (!register_check(reg_name))
-    {
-        return "";
+std::string CodeGen::gen_low_op(Operator op, const Var& result, const Var& lval,
+                                const Var& rval) {
+  // åˆ¤æ–­resultçš„tagæ˜¯å¦ä¸ºIDï¼Œè‹¥ä¸æ˜¯ï¼Œåˆ™è¿”å›
+  // å¦‚æœlvalæ˜¯æ•´å½¢å­—é¢é‡ï¼Œåˆ™str_lvalä¸º"$number"
+  // å¦åˆ™æ ¹æ®æ ˆå¸§ä¿¡æ¯ï¼Œç”Ÿæˆä¸€æ¡æŒ‡ä»¤ï¼Œè¯¥æŒ‡ä»¤ä»å†…å­˜ä¸­è¯»å–lvalçš„å€¼åˆ°rbx,
+  // str_lvalè®¾ç½®ä¸º"%rbx"ã€‚è‹¥æ ˆå¸§ä¸­ä¸å­˜åœ¨è¯¥ä¿¡æ¯ï¼Œåˆ™è¿”å›ã€‚
+  // åŒæ ·å¤„ç†rvalï¼Œåªä¸è¿‡å¯„å­˜å™¨æ”¹ä¸ºrcx.
+  // ç”ŸæˆæŒ‡ä»¤add %rbx, %rcx
+  // ä»æ ˆå¸§ä¿¡æ¯ä¸­æŸ¥æ‰¾resultï¼Œå¦‚æœä¸å­˜åœ¨ï¼Œåˆ™ç”Ÿæˆä¸€æ¡åˆ›å»ºå˜é‡çš„æŒ‡ä»¤ã€‚å¦‚æœå­˜åœ¨ï¼Œåˆ™ç”Ÿæˆä¸€æ¡å‘æ ˆå†™å…¥çš„æŒ‡ä»¤ã€‚
+  std::string code = "";
+  std::string str_lval = "";
+  std::string str_rval = "";
+  std::string str_op;
+  if (!(op == Operator::OP_ADD || op == Operator::OP_SUB)) {
+    error("invalid operator");
+    return "";
+  }
+  if (result.tag != Tag::IDENTIFIER) {
+    error("result must be identifier");
+    return "";
+  }
+  code += gen_access_arg(lval, RBX);
+  code += gen_access_arg(rval, RCX);
+  if (op == Operator::OP_ADD) {
+    str_op = "\taddq";
+  } else {
+    str_op = "\tsubq";
+  }
+  code += str_op + " %rcx, %rbx\n";
+  if (curr_frame_.is_variable_exists(result.name)) {
+    int offset = curr_frame_.get_variable_offset(result.name);
+    if (offset == 0) {
+      std::stringstream sstream;
+      sstream << "var " << result.name << " offset is 0";
+      print_error(sstream.str().c_str());
+      return "";
     }
-    if (!frame_offset_check(reg_name, offset))
-    {
-        return "";
-    }
-    std::stringstream sstream;
-    sstream << "\tmovq " << offset << "(%rbp), " << reg_name << "\n";
-    return sstream.str();
+    code += gen_save_variable(RBX, offset);
+  } else {
+    code += gen_create_variable(RBX);
+    curr_frame_.add_local(result.name, get_type_length(result.type));
+  }
+  return code;
 }
 
 /*
- * Éú³ÉÒ»Ìõ´´½¨±äÁ¿µÄ»ã±àÖ¸Áî£¬ÊµÏÖ·½Ê½ÊÇ½«±äÁ¿Ñ¹Õ»£¬ÀàËÆ pushq %rbx
+    ç”Ÿæˆè¿›å…¥è¿‡ç¨‹æ—¶çš„ä»£ç 
+*/
+std::string CodeGen::gen_enter_proc() {
+  return "\tpushq %rbp\n"
+         "\tmovq %rsp, %rbp\n";
+}
+
+/*
+    ç”Ÿæˆé€€å‡ºè¿‡ç¨‹æ—¶çš„ä»£ç ï¼Œè¦å°†æ ˆé€€å‡º
+*/
+std::string CodeGen::gen_exit_proc() {
+  /*
+      é€€å‡ºä¸´æ—¶åˆ†é…çš„æ ˆå¸§ç©ºé—´
+  */
+  std::stringstream sstream;
+  sstream << ".end_" << function_->name << ":\n";
+  sstream << "\tsubq %rsp, %rbp\n";
+  sstream << "\taddq %rbp, %rsp\n";
+  sstream << "\tpopq %rbp\n"
+             "\tret\n";
+  return sstream.str();
+}
+
+/*
+    ç”Ÿæˆreturnè¿”å›å€¼ï¼Œå°†å€¼èµ‹ç»™raxï¼Œ
+*/
+std::string CodeGen::gen_return(const Var& result) {
+  return gen_access_arg(result, RAX) + "\tjmp .end_" + function_->name + "\n";
+}
+
+/*
+ * ç”Ÿæˆä¸€æ¡ä»å†…å­˜ä¸­è½½å…¥å˜é‡åˆ°å¯„å­˜å™¨çš„æŒ‡ä»¤
+ * reg_name å¯„å­˜å™¨åç§° {"%rbx", "%rcx"}
+ * offset ç›¸å¯¹äºbspçš„åç§»åœ°å€
  */
-std::string CodeGen::gen_create_variable(const std::string& reg_name)
-{
-    if (!register_check(reg_name))
-    {
-        return "";
-    }
-    std::stringstream sstream;
-    sstream << "\tpushq " << reg_name << "\n";
-    //sstream << "\taddq $8, %rdx\n";
-    return sstream.str();
+std::string CodeGen::gen_load_variable(const std::string& reg_name,
+                                       int offset) {
+  if (!register_check(reg_name)) {
+    return "";
+  }
+  if (!frame_offset_check(reg_name, offset)) {
+    return "";
+  }
+  std::stringstream sstream;
+  sstream << "\tmovq " << offset << "(%rbp), " << reg_name << "\n";
+  return sstream.str();
 }
 
 /*
-    ½«±äÁ¿±£´æÔÚÕ»ÖĞ
-*/
-std::string CodeGen::gen_save_variable(const std::string& reg_name, long offset)
-{
-    if (!register_check(reg_name))
-    {
-        return "";
-    }
-    if (!frame_offset_check(reg_name, offset))
-    {
-        return "";
-    }
-    std::stringstream sstream;
-    sstream << "\tmovq " << reg_name << ", " << offset << "(%rbp)\n";
-    return sstream.str();
-}
-
-std::string CodeGen::gen_call(const Var& result, const std::string& fun_name)
-{
-    if (fun_name == "print")
-    {
-        return gen_print_int(0);
-    }
-    std::stringstream sstream;
-    sstream << "\tcall " << fun_name << "\n";
-    if (result.tag == Tag::IDENTIFIER)
-    {
-        sstream << "\tmovq %rax, %rbx\n";
-        sstream << gen_create_variable(RBX);
-        curr_frame_.add_local(result.name, get_type_length(result.type));
-    }
-    return sstream.str();
-}
-
-std::string CodeGen::gen_set_param(const Var& param)
-{
-    if (param.tag != Tag::LT_NUMBER && param.tag != Tag::IDENTIFIER)
-    {
-        std::string error_msg = "tag of param " + param.name + " must be LT_NUMBER or IDENTIFIER";
-        error(error_msg.c_str());
-        return "";
-    }
-    std::string code = "";
-    code += gen_access_arg(param, RBX);
-    code += "\tpushq %rbx\n";
-    curr_frame_.add_param_out(get_type_length(param.type));
-    return code;
+ * ç”Ÿæˆä¸€æ¡åˆ›å»ºå˜é‡çš„æ±‡ç¼–æŒ‡ä»¤ï¼Œå®ç°æ–¹å¼æ˜¯å°†å˜é‡å‹æ ˆï¼Œç±»ä¼¼ pushq %rbx
+ */
+std::string CodeGen::gen_create_variable(const std::string& reg_name) {
+  if (!register_check(reg_name)) {
+    return "";
+  }
+  std::stringstream sstream;
+  sstream << "\tpushq " << reg_name << "\n";
+  // sstream << "\taddq $8, %rdx\n";
+  return sstream.str();
 }
 
 /*
-    Éú³ÉÓïÒåÎªif arg1 op arg2 goto resultµÄÓï¾ä
+    å°†å˜é‡ä¿å­˜åœ¨æ ˆä¸­
 */
-std::string CodeGen::gen_if_jump(Operator op, const Var& result, const Var& arg1, const Var& arg2)
-{
-    /*
-        ²½Öè£º
-        1 ÔØÈëarg1µ½rbx£¬arg2µ½rcx
-        2 Éú³Écmpq rbx, rcx
-        3 ¸ù¾İ²Ù×÷·ûÉú³Éje£¬jge
-    */
-    std::string code = "";
-    code += gen_access_arg(arg1, RBX);
-    code += gen_access_arg(arg2, RCX);
-    code += "\tcmpq " + RBX + ", " + RCX + "\n";
-    std::string jump = "";
-    switch (op)
-    {
-    case Operator::OP_LESS:
-        jump = "jl";
-        break;
-    case Operator::OP_LESS_EQUAL:
-        jump = "jle";
-        break;
-    case Operator::OP_EQUAL:
-        jump = "je";
-        break;
-    case Operator::OP_NOT_EQUAL:
-        jump = "jne";
-        break;
-    case Operator::OP_GREATER:
-        jump = "jg";
-        break;
-    case Operator::OP_GREATER_EQUAL:
-        jump = "jge";
-        break;
-    default:
-        break;
-    }
-    std::string label = result.value_string;
-    if (label.empty())
-    {
-        error("label is empty");
-        return "";
-    }
-    code += "\t" + jump + " " + label + "\n";
-    return code;
+std::string CodeGen::gen_save_variable(const std::string& reg_name,
+                                       int offset) {
+  if (!register_check(reg_name)) {
+    return "";
+  }
+  if (!frame_offset_check(reg_name, offset)) {
+    return "";
+  }
+  std::stringstream sstream;
+  sstream << "\tmovq " << reg_name << ", " << offset << "(%rbp)\n";
+  return sstream.str();
 }
 
-std::string CodeGen::gen_if_false_jump(Operator op, const Var& result, const Var& arg1, const Var& arg2)
-{
-    // Ë¼Â·Í¬gen_if_jump£¬³ıÁËÌø×ªÖ¸ÁîÊÇ·´µÄ
-    std::string code = "";
-    code += gen_access_arg(arg1, RBX);
-    code += gen_access_arg(arg2, RCX);
-    code += "\tcmpq " + RBX + ", " + RCX + "\n";
-    std::string jump = "";
-    switch (op)
-    {
-    case Operator::OP_LESS:
-        jump = "jge";
-        break;
-    case Operator::OP_LESS_EQUAL:
-        jump = "jg";
-        break;
-    case Operator::OP_EQUAL:
-        jump = "jne";
-        break;
-    case Operator::OP_NOT_EQUAL:
-        jump = "je";
-        break;
-    case Operator::OP_GREATER:
-        jump = "jle";
-        break;
-    case Operator::OP_GREATER_EQUAL:
-        jump = "jl";
-        break;
-    default:
-        break;
-    }
-    std::string label = result.value_string;
-    if (label.empty())
-    {
-        error("label is empty");
-        return "";
-    }
-    code += "\t" + jump + " " + label + "\n";
-    return code;
+std::string CodeGen::gen_call(const Var& result, const std::string& fun_name) {
+  if (fun_name == "print") {
+    return gen_print_int(0);
+  }
+  std::stringstream sstream;
+  sstream << "\tcall " << fun_name << "\n";
+  if (result.tag == Tag::IDENTIFIER) {
+    sstream << "\tmovq %rax, %rbx\n";
+    sstream << gen_create_variable(RBX);
+    curr_frame_.add_local(result.name, get_type_length(result.type));
+  }
+  return sstream.str();
 }
 
-std::string CodeGen::gen_jump(const Var& result)
-{
-    std::string code = "";
-    std::string label = result.value_string;
-    if (label.empty())
-    {
-        error("label is empty");
-        return "";
-    }
-    code += "\tjmp " + label + "\n";
-    return code;
-    return std::string();
-}
-
-bool CodeGen::register_check(const std::string& reg_name)
-{
-    if (reg_name == RBX || reg_name == RCX || reg_name == RAX)
-    {
-        return true;
-    }
-    std::string error_msg = "invalid register name:" + reg_name;
+std::string CodeGen::gen_set_param(const Var& param) {
+  if (param.tag != Tag::LT_NUMBER && param.tag != Tag::IDENTIFIER) {
+    std::string error_msg =
+        "tag of param " + param.name + " must be LT_NUMBER or IDENTIFIER";
     error(error_msg.c_str());
-    return false;
+    return "";
+  }
+  std::string code = "";
+  code += gen_access_arg(param, RBX);
+  code += "\tpushq %rbx\n";
+  curr_frame_.add_param_out(get_type_length(param.type));
+  return code;
 }
 
 /*
- * Í¨¹ıÖ¸ÁîµØÖ·»ñÈ¡±äÁ¿
+    ç”Ÿæˆè¯­ä¹‰ä¸ºif arg1 op arg2 goto resultçš„è¯­å¥
+*/
+std::string CodeGen::gen_if_jump(Operator op, const Var& result,
+                                 const Var& arg1, const Var& arg2) {
+  /*
+      æ­¥éª¤ï¼š
+      1 è½½å…¥arg1åˆ°rbxï¼Œarg2åˆ°rcx
+      2 ç”Ÿæˆcmpq rbx, rcx
+      3 æ ¹æ®æ“ä½œç¬¦ç”Ÿæˆjeï¼Œjge
+  */
+  std::string code = "";
+  code += gen_access_arg(arg1, RBX);
+  code += gen_access_arg(arg2, RCX);
+  code += "\tcmpq " + RBX + ", " + RCX + "\n";
+  std::string jump = "";
+  switch (op) {
+    case Operator::OP_LESS:
+      jump = "jl";
+      break;
+    case Operator::OP_LESS_EQUAL:
+      jump = "jle";
+      break;
+    case Operator::OP_EQUAL:
+      jump = "je";
+      break;
+    case Operator::OP_NOT_EQUAL:
+      jump = "jne";
+      break;
+    case Operator::OP_GREATER:
+      jump = "jg";
+      break;
+    case Operator::OP_GREATER_EQUAL:
+      jump = "jge";
+      break;
+    default:
+      break;
+  }
+  std::string label = result.value_string;
+  if (label.empty()) {
+    error("label is empty");
+    return "";
+  }
+  code += "\t" + jump + " " + label + "\n";
+  return code;
+}
+
+std::string CodeGen::gen_if_false_jump(Operator op, const Var& result,
+                                       const Var& arg1, const Var& arg2) {
+  // æ€è·¯åŒgen_if_jumpï¼Œé™¤äº†è·³è½¬æŒ‡ä»¤æ˜¯åçš„
+  std::string code = "";
+  code += gen_access_arg(arg1, RBX);
+  code += gen_access_arg(arg2, RCX);
+  code += "\tcmpq " + RBX + ", " + RCX + "\n";
+  std::string jump = "";
+  switch (op) {
+    case Operator::OP_LESS:
+      jump = "jge";
+      break;
+    case Operator::OP_LESS_EQUAL:
+      jump = "jg";
+      break;
+    case Operator::OP_EQUAL:
+      jump = "jne";
+      break;
+    case Operator::OP_NOT_EQUAL:
+      jump = "je";
+      break;
+    case Operator::OP_GREATER:
+      jump = "jle";
+      break;
+    case Operator::OP_GREATER_EQUAL:
+      jump = "jl";
+      break;
+    default:
+      break;
+  }
+  std::string label = result.value_string;
+  if (label.empty()) {
+    error("label is empty");
+    return "";
+  }
+  code += "\t" + jump + " " + label + "\n";
+  return code;
+}
+
+std::string CodeGen::gen_jump(const Var& result) {
+  std::string code = "";
+  std::string label = result.value_string;
+  if (label.empty()) {
+    error("label is empty");
+    return "";
+  }
+  code += "\tjmp " + label + "\n";
+  return code;
+  return std::string();
+}
+
+bool CodeGen::register_check(const std::string& reg_name) {
+  if (reg_name == RBX || reg_name == RCX || reg_name == RAX) {
+    return true;
+  }
+  std::string error_msg = "invalid register name:" + reg_name;
+  error(error_msg.c_str());
+  return false;
+}
+
+/*
+ * é€šè¿‡æŒ‡ä»¤åœ°å€è·å–å˜é‡
  */
-Var CodeGen::get_var(const Address& address)
-{
-    switch (address.type)
-    {
+Var CodeGen::get_var(const Address& address) {
+  switch (address.type) {
     case NAME:
     case TEMP_VAR:
-        return function_->get_variable(address.value);
+      return function_->get_variable(address.value);
     case LITERAL_NUMBER:
-        return Var(Tag::LT_NUMBER, "", address.value, Type::INT);
+      return Var(Tag::LT_NUMBER, "", address.value, Type::INT);
     case LITERAL_CHAR:
-        return Var(Tag::LT_CHAR, "", address.value, Type::CHAR);
+      return Var(Tag::LT_CHAR, "", address.value, Type::CHAR);
     case LITERAL_STRING:
-        return Var(Tag::LT_STRING, "", address.value, Type::STRING);
+      return Var(Tag::LT_STRING, "", address.value, Type::STRING);
     default:
-        return Var();
-    }
+      return Var();
+  }
 }
 
 /**
-    Éú³É·ÃÎÊ²Ù×÷ÊıµÄ»ã±à´úÂë£¬Ö§³ÖIDºÍÕûĞÎ³£Á¿
-    var ²Ù×÷Êı
-    reg_name ¼Ä´æÆ÷Ãû³Æ {"%rax", "%rbx", "%rcx"}
+    ç”Ÿæˆè®¿é—®æ“ä½œæ•°çš„æ±‡ç¼–ä»£ç ï¼Œæ”¯æŒIDå’Œæ•´å½¢å¸¸é‡
+    var æ“ä½œæ•°
+    reg_name å¯„å­˜å™¨åç§° {"%rax", "%rbx", "%rcx"}
 */
-std::string CodeGen::gen_access_arg(const Var& var, const std::string& reg_name)
-{
-    std::string error_msg = "";
-    if (!register_check(reg_name))
-    {
-        return "";
-    }
-    std::string str_val;
-    if (var.tag == Tag::LT_NUMBER)
-    {
-        str_val = "$" + var.value_string;
-        return "\tmovq " + str_val + " , " + reg_name + "\n";
-    }
-    else if (var.tag == Tag::IDENTIFIER)
-    {
-        if (!variable_exist_check(var.name))
-        {
-            return "";
-        }
-        long offset = curr_frame_.get_variable_offset(var.name);
-        if (!frame_offset_check(var.name, offset))
-        {
-            return "";
-        }
-        return gen_load_variable(reg_name, offset);
-    }
+std::string CodeGen::gen_access_arg(const Var& var,
+                                    const std::string& reg_name) {
+  std::string error_msg = "";
+  if (!register_check(reg_name)) {
     return "";
-}
-
-/*
-    ½«Ã¿¸ö²ÎÊıµÄÆ«ÒÆµØÖ·´æ´¢µ½Õ»Ö¡µ±ÖĞ£¬ÒÔ±ãºóĞø¶ÁÈ¡¡£
-    ÒòÎªº¯Êı¿ªÊ¼Ö´ĞĞÖ®Ç°µ÷ÓÃ¹ıcall(±¾ÖÊ¾ÍÊÇpush rip)ºÍpush rbp£¬
-    ËùÒÔ²ÎÊıµÄÆ«ÒÆÆğÊ¼µØÖ·Îªrbp+16¡£
-*/
-void CodeGen::parse_params()
-{
-    assert(function_ != nullptr);
-    int offset = PARAM_OFFSET_BEGIN;
-    const std::vector<Var> params = function_->get_params();
-    for (unsigned int i = 0; i < params.size(); i++)
-    {
-        Var var = params[i];
-        curr_frame_.add_param_in(var.name, offset);
-        int length = get_type_length(var.type);
-        offset += length;
+  }
+  std::string str_val;
+  if (var.tag == Tag::LT_NUMBER) {
+    str_val = "$" + var.value_string;
+    return "\tmovq " + str_val + " , " + reg_name + "\n";
+  } else if (var.tag == Tag::IDENTIFIER) {
+    if (!variable_exist_check(var.name)) {
+      return "";
     }
+    int offset = curr_frame_.get_variable_offset(var.name);
+    if (!frame_offset_check(var.name, offset)) {
+      return "";
+    }
+    return gen_load_variable(reg_name, offset);
+  }
+  return "";
 }
 
 /*
-    »ñÈ¡ÀàĞÍµÄ³¤¶È£¬µ¥Î»Îª×Ö½Ú
+    å°†æ¯ä¸ªå‚æ•°çš„åç§»åœ°å€å­˜å‚¨åˆ°æ ˆå¸§å½“ä¸­ï¼Œä»¥ä¾¿åç»­è¯»å–ã€‚
+    å› ä¸ºå‡½æ•°å¼€å§‹æ‰§è¡Œä¹‹å‰è°ƒç”¨è¿‡call(æœ¬è´¨å°±æ˜¯push rip)å’Œpush rbpï¼Œ
+    æ‰€ä»¥å‚æ•°çš„åç§»èµ·å§‹åœ°å€ä¸ºrbp+16ã€‚
 */
-int CodeGen::get_type_length(const Type& type)
-{
-    switch (type)
-    {
+void CodeGen::parse_params() {
+  assert(function_ != nullptr);
+  int offset = PARAM_OFFSET_BEGIN;
+  const std::vector<Var> params = function_->get_params();
+  for (unsigned int i = 0; i < params.size(); i++) {
+    Var var = params[i];
+    curr_frame_.add_param_in(var.name, offset);
+    int length = get_type_length(var.type);
+    offset += length;
+  }
+}
+
+/*
+    è·å–ç±»å‹çš„é•¿åº¦ï¼Œå•ä½ä¸ºå­—èŠ‚
+*/
+int CodeGen::get_type_length(const Type& type) {
+  switch (type) {
     case Type::INT:
-        return 8;
-    }
-    return 0;
+      return 8;
+  }
+  return 0;
 }
 
-bool CodeGen::variable_exist_check(const std::string& var_name)
-{
-    if (!curr_frame_.is_variable_exists(var_name))
-    {
-        std::string error_msg = "var " + var_name + " not found in stackframe";
-        error(error_msg.c_str());
-        return false;
-    }
-    return true;
+bool CodeGen::variable_exist_check(const std::string& var_name) {
+  if (!curr_frame_.is_variable_exists(var_name)) {
+    std::string error_msg = "var " + var_name + " not found in stackframe";
+    error(error_msg.c_str());
+    return false;
+  }
+  return true;
 }
 
-bool CodeGen::frame_offset_check(const std::string& var_name, long offset)
-{
-    if (offset >= LOCAL_OFFSET_BEGIN && offset < PARAM_OFFSET_BEGIN)
-    {
-        std::stringstream sstream;
-        sstream << "var " << var_name << " offset is " << offset << ",it can't be in [0,16)";
-        error(sstream.str().c_str());
-        return false;
-    }
-    return true;
+bool CodeGen::frame_offset_check(const std::string& var_name, int offset) {
+  if (offset >= LOCAL_OFFSET_BEGIN && offset < PARAM_OFFSET_BEGIN) {
+    std::stringstream sstream;
+    sstream << "var " << var_name << " offset is " << offset
+            << ",it can't be in [0,16)";
+    error(sstream.str().c_str());
+    return false;
+  }
+  return true;
 }

@@ -1,35 +1,31 @@
-#include "Var.h"
+ï»¿#include "Var.h"
+
 #include "Type.h"
 Var Var::default_ = Var();
 
 /*
- * ´´½¨Ò»¸önumber×ÖÃæÁ¿£¬ÏÖÔÚ½öÖ§³ÖÕûĞÍ
+ * åˆ›å»ºä¸€ä¸ªnumberå­—é¢é‡ï¼Œç°åœ¨ä»…æ”¯æŒæ•´å‹
  */
-Var Var::create_number(std::string value)
-{
-	return Var(Tag::LT_NUMBER, "", value, Type::INT);
+Var Var::create_number(std::string value) {
+  return Var(Tag::LT_NUMBER, "", value, Type::INT);
 }
 
-Var Var::create_id(std::string name, Type type)
-{
-	return Var(Tag::IDENTIFIER, name, "", type);
+Var Var::create_id(std::string name, Type type) {
+  return Var(Tag::IDENTIFIER, name, "", type);
 }
 
-Var::Var()
-{
-	tag = Tag::UNKNOWN;
-	type = Type::UNKNOWN;
+Var::Var() {
+  tag = Tag::UNKNOWN;
+  type = Type::UNKNOWN;
 }
 
-Var::Var(Tag t, std::string name, std::string value, Type type) :tag{ t }, name{ name }, value_string{value},type{ type }
-{
-}
+Var::Var(Tag t, std::string name, std::string value, Type type)
+    : tag{t}, name{name}, value_string{value}, type{type} {}
 
-Var& Var::operator=(const Var& ref)
-{
-	tag = ref.tag;
-	type = ref.type;
-	name = ref.name;
-	value_string = ref.value_string;
-	return *this;
+Var& Var::operator=(const Var& ref) {
+  tag = ref.tag;
+  type = ref.type;
+  name = ref.name;
+  value_string = ref.value_string;
+  return *this;
 }

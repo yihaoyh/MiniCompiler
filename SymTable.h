@@ -1,23 +1,23 @@
-#pragma once
-#include<map>
-#include<string>
-#include<vector>
-#include"Var.h"
+ï»¿#pragma once
+#include <map>
+#include <string>
+#include <vector>
+
+#include "Var.h"
 //#include"Function.h"
-#include"InterInstruction.h"
+#include "InterInstruction.h"
 
-//class Function;
+// class Function;
 
-class SymTable
-{
-public:
-	void put_variable(Var);
-	Var get_variable(std::string);
-	//void add_instruction(InterInstruction);
-	unsigned int get_next_instruction();
-	Var gen_temp_var(Type type); // Éú³ÉÁÙÊ±±äÁ¿
-private:
-	std::map<std::string, Var> var_table_;  // ±äÁ¿±í
-	std::map<std::string, Var> temp_var_table; // ÁÙÊ±±äÁ¿±í
-	std::vector<InterInstruction> inst_vector;
+class SymTable {
+ public:
+  void put_variable(Var);
+  Var get_variable(std::string);
+  Var get_const_variable(std::string) const;
+  unsigned int get_next_instruction();
+  Var gen_temp_var(Type type);  // ç”Ÿæˆä¸´æ—¶å˜é‡
+ private:
+  std::map<std::string, Var> var_table_;      // å˜é‡è¡¨
+  std::map<std::string, Var> temp_var_table;  // ä¸´æ—¶å˜é‡è¡¨
+  std::vector<InterInstruction> inst_vector;
 };

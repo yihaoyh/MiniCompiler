@@ -1,70 +1,71 @@
-#pragma once
-#include<vector>
-#include<string>
-#include"InterInstruction.h"
-#include"Frame.h"
-#include"SymTable.h"
-#include"Function.h"
+ï»¿#pragma once
+#include <string>
+#include <vector>
+
+#include "Frame.h"
+#include "Function.h"
+#include "InterInstruction.h"
+#include "SymTable.h"
 /*
- * »ã±àÉú³É¹ı³Ì£º
- * 1 ½âÎöËùÓĞº¯ÊıµÄ²ÎÊıĞÅÏ¢ºÍ·µ»ØÖµĞÅÏ¢
- * 2 ¶ÔÓÚº¯ÊıÁĞ±íÖĞµÄÃ¿¸öº¯Êı£º
- *	2.1 ´´½¨Õ»Ö¡
- *	2.2 Éú³ÉÍ·²¿´úÂë£¬°üÀ¨¶Î£¬±êÇ©µÈĞÅÏ¢¡£
- *  2.3 Éú³É½øÈëÕ»Ö¡´úÂë
- *	2.4 ¶ÔÓÚº¯ÊıµÄÖ¸ÁîÁĞ±íÖĞµÄÃ¿ÌõÖ¸Áî£º
- *		2.4.1 ·­Òë³ÉÏàÓ¦µÄ´úÂë
- *  2.5 Éú³ÉÍË³öÕ»Ö¡´úÂë
- * 
- * »ã±àÉú³É¹æÔò
- * 1 ×î¶àÊ¹ÓÃÁ½¸ö¼Ä´æÆ÷£¬bxºÍcx
- * 2 Èô±äÁ¿ÔÚÕ»Ö¡ÖĞ²»´æÔÚ£¬ÔòÏÈÓÃbxÍê³É²Ù×÷£¬È»ºóÑ¹Õ»£¬²¢½«Æ«ÒÆµØÖ·¼ÇÂ¼ÔÚÕ»Ö¡ĞÅÏ¢ÖĞ¡£Èô´æÔÚ£¬Ôò´ÓÕ»Ö¡ĞÅÏ¢ÖĞ¶ÁÈ¡Æ«ÒÆµØÖ·£¬È»ºó
- *   ½«Æä¶ÁÖÁrbx»òÕßrcxÖĞ£¬ÓÅÏÈÊ¹ÓÃrbx¡£
- * 3 ÍË³öÕ»Ö¡Ê±£¬Òª½«Õ»Ö¡ĞÅÏ¢ÖĞµÄ±äÁ¿È«²¿ÍË³ö¡£
+ * æ±‡ç¼–ç”Ÿæˆè¿‡ç¨‹ï¼š
+ * 1 è§£ææ‰€æœ‰å‡½æ•°çš„å‚æ•°ä¿¡æ¯å’Œè¿”å›å€¼ä¿¡æ¯
+ * 2 å¯¹äºå‡½æ•°åˆ—è¡¨ä¸­çš„æ¯ä¸ªå‡½æ•°ï¼š
+ *	2.1 åˆ›å»ºæ ˆå¸§
+ *	2.2 ç”Ÿæˆå¤´éƒ¨ä»£ç ï¼ŒåŒ…æ‹¬æ®µï¼Œæ ‡ç­¾ç­‰ä¿¡æ¯ã€‚
+ *  2.3 ç”Ÿæˆè¿›å…¥æ ˆå¸§ä»£ç 
+ *	2.4 å¯¹äºå‡½æ•°çš„æŒ‡ä»¤åˆ—è¡¨ä¸­çš„æ¯æ¡æŒ‡ä»¤ï¼š
+ *		2.4.1 ç¿»è¯‘æˆç›¸åº”çš„ä»£ç 
+ *  2.5 ç”Ÿæˆé€€å‡ºæ ˆå¸§ä»£ç 
+ *
+ * æ±‡ç¼–ç”Ÿæˆè§„åˆ™
+ * 1 æœ€å¤šä½¿ç”¨ä¸¤ä¸ªå¯„å­˜å™¨ï¼Œbxå’Œcx
+ * 2
+ *è‹¥å˜é‡åœ¨æ ˆå¸§ä¸­ä¸å­˜åœ¨ï¼Œåˆ™å…ˆç”¨bxå®Œæˆæ“ä½œï¼Œç„¶åå‹æ ˆï¼Œå¹¶å°†åç§»åœ°å€è®°å½•åœ¨æ ˆå¸§ä¿¡æ¯ä¸­ã€‚è‹¥å­˜åœ¨ï¼Œåˆ™ä»æ ˆå¸§ä¿¡æ¯ä¸­è¯»å–åç§»åœ°å€ï¼Œç„¶å
+ *   å°†å…¶è¯»è‡³rbxæˆ–è€…rcxä¸­ï¼Œä¼˜å…ˆä½¿ç”¨rbxã€‚
+ * 3 é€€å‡ºæ ˆå¸§æ—¶ï¼Œè¦å°†æ ˆå¸§ä¿¡æ¯ä¸­çš„å˜é‡å…¨éƒ¨é€€å‡ºã€‚
  */
-class CodeGen
-{
-public:
-	CodeGen() 
-	{
-	}
-	std::string parse_functions(std::vector<Function> functions);
-private:
-	std::string parse_function(Function& fun);
-	std::string parse_instruction(const InterInstruction& inst);
-	std::string gen_header(const std::string& fun_name);
-    std::string gen_assign(const Var& lval, const Var& rval);
-	std::string gen_low_op(Operator op, const Var& result, const Var& lval, const Var& rval);
-	std::string gen_enter_proc();
-	std::string gen_exit_proc();
-	std::string gen_return(const Var& result);
-	std::string gen_load_variable(const std::string& reg_name, long offset);
-	std::string gen_create_variable(const std::string& reg_name);
-	std::string gen_save_variable(const std::string& reg_name, long offset);
-	std::string gen_call(const Var& result, const std::string& fun_name);
-	std::string gen_set_param(const Var& param);
-	std::string gen_if_jump(Operator op, const Var& result, const Var& lval, const Var& rval);
-	std::string gen_if_false_jump(Operator op, const Var& result, const Var& lval, const Var& rval);
-	std::string gen_jump(const Var& result);
+class CodeGen {
+ public:
+  CodeGen() {}
+  std::string parse_functions(const std::vector<Function>& functions);
 
-	bool register_check(const std::string& reg_name);
-	bool frame_offset_check(const std::string& var_name, long offset);
-	bool variable_exist_check(const std::string& var_name);
-	Var get_var(const Address& address);
-	
-	/*
-	Éú³É·ÃÎÊ²Ù×÷ÊıµÄ´úÂë£¬Ö§³ÖIDºÍÕûĞÎ³£Á¿
-	@param[in] var ²Ù×÷Êı
-	reg_name
-	*/	
-	std::string gen_access_arg(const Var& var, const std::string& reg_name);
+ private:
+  std::string parse_function(const Function& fun);
+  std::string parse_instruction(const InterInstruction& inst);
+  std::string gen_header(const std::string& fun_name);
+  std::string gen_assign(const Var& lval, const Var& rval);
+  std::string gen_low_op(Operator op, const Var& result, const Var& lval,
+                         const Var& rval);
+  std::string gen_enter_proc();
+  std::string gen_exit_proc();
+  std::string gen_return(const Var& result);
+  std::string gen_load_variable(const std::string& reg_name, int offset);
+  std::string gen_create_variable(const std::string& reg_name);
+  std::string gen_save_variable(const std::string& reg_name, int offset);
+  std::string gen_call(const Var& result, const std::string& fun_name);
+  std::string gen_set_param(const Var& param);
+  std::string gen_if_jump(Operator op, const Var& result, const Var& lval,
+                          const Var& rval);
+  std::string gen_if_false_jump(Operator op, const Var& result, const Var& lval,
+                                const Var& rval);
+  std::string gen_jump(const Var& result);
 
-	
-	void parse_params();
-	int get_type_length(const Type& type);
+  bool register_check(const std::string& reg_name);
+  bool frame_offset_check(const std::string& var_name, int offset);
+  bool variable_exist_check(const std::string& var_name);
+  Var get_var(const Address& address);
 
-	Frame curr_frame_;
+  /*
+  ç”Ÿæˆè®¿é—®æ“ä½œæ•°çš„ä»£ç ï¼Œæ”¯æŒIDå’Œæ•´å½¢å¸¸é‡
+  @param[in] var æ“ä½œæ•°
+  reg_name
+  */
+  std::string gen_access_arg(const Var& var, const std::string& reg_name);
 
-	Function* function_ = nullptr;
+  void parse_params();
+  int get_type_length(const Type& type);
+
+  Frame curr_frame_;
+
+  const Function* function_ = nullptr;
 };
-
