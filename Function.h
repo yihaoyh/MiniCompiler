@@ -15,7 +15,7 @@ class Function {
   std::vector<InterInstruction>& get_instructions();
   const std::vector<InterInstruction>& get_const_instructions() const;
   const std::vector<Var> get_params() const;
-  unsigned int get_next_instruction();
+  instr_number get_next_instruction();
   void put_variable(const Var& var);
   const Var get_variable(const std::string& name) const;
   Var gen_temp_var(const Type type);

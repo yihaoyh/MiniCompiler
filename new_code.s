@@ -6,12 +6,12 @@ f:
 	movq 16(%rbp), %rbx
 	movq $0 , %rcx
 	cmpq %rbx, %rcx
-	je .Lf0
-	jmp .Lf1
-.Lf0:
+	je .L_f0
+	jmp .L_f1
+.L_f0:
 	movq 16(%rbp), %rax
 	jmp .end_f
-.Lf1:
+.L_f1:
 	movq 16(%rbp), %rbx
 	movq $1 , %rcx
 	subq %rcx, %rbx

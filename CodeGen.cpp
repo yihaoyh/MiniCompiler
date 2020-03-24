@@ -287,10 +287,10 @@ std::string CodeGen::gen_if_jump(Operator op, const Var& result,
   std::string jump = "";
   switch (op) {
     case Operator::OP_LESS:
-      jump = "jl";
+      jump = "jg";
       break;
     case Operator::OP_LESS_EQUAL:
-      jump = "jle";
+      jump = "jge";
       break;
     case Operator::OP_EQUAL:
       jump = "je";
@@ -299,10 +299,10 @@ std::string CodeGen::gen_if_jump(Operator op, const Var& result,
       jump = "jne";
       break;
     case Operator::OP_GREATER:
-      jump = "jg";
+      jump = "jl";
       break;
     case Operator::OP_GREATER_EQUAL:
-      jump = "jge";
+      jump = "jle";
       break;
     default:
       break;

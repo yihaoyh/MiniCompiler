@@ -38,7 +38,7 @@ const std::vector<InterInstruction>& Function::get_const_instructions() const {
 
 const std::vector<Var> Function::get_params() const { return params_; }
 
-unsigned int Function::get_next_instruction() { return inst_vector_.size(); }
+instr_number Function::get_next_instruction() { return inst_vector_.size(); }
 
 void Function::put_variable(const Var& var) { sym_table_.put_variable(var); }
 
@@ -54,6 +54,6 @@ Var Function::gen_temp_var(const Type type) {
 
 std::string Function::gen_label() {
   std::stringstream sstream;
-  sstream << ".L" << name << label_index_++;
+  sstream << ".L_" << name << label_index_++;
   return sstream.str();
 }

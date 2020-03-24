@@ -1,29 +1,34 @@
 ﻿#include "Parser.h"
+
 #include <assert.h>
+
 #include <iostream>
 #include <string>
 #include <vector>
+
 #include "CodeGen.h"
 #include "Utils.h"
- 
+
 #define FIRST(TAG) token_look_.tag() == TAG
 #define OR(TAG) || token_look_.tag() == TAG
 #define TYPE_FIRST \
   FIRST(Tag::KW_INT) OR(Tag::KW_CHAR) OR(Tag::KW_STRING) OR(Tag::KW_VOID)
-#define EXPR_FIRST                                                           \
-  FIRST(Tag::LPAREN)                                                         \
-  OR(Tag::LT_NUMBER) OR(Tag::LT_CHAR) OR(Tag::LT_STRING) OR(Tag::IDENTIFIER) \
-      OR(Tag::SUB) OR(Tag::MULTIPLY)
+#define EXPR_FIRST   \
+  FIRST(Tag::LPAREN) \
+  OR(Tag::LT_NUMBER) \
+  OR(Tag::LT_CHAR)   \
+  OR(Tag::LT_STRING) OR(Tag::IDENTIFIER) OR(Tag::SUB) OR(Tag::MULTIPLY)
 #define STATEMENT_FIRST \
   EXPR_FIRST OR(Tag::KW_IF) OR(Tag::KW_RETURN) OR(Tag::KW_WHILE)
-#define COMPARE_FIRST                                                    \
-  FIRST(Tag::LESS)                                                       \
-  OR(Tag::LESS_EQUAL) OR(Tag::EQUAL) OR(Tag::NOT_EQUAL) OR(Tag::GREATER) \
-      OR(Tag::GREATER_EQUAL)
+#define COMPARE_FIRST \
+  FIRST(Tag::LESS)    \
+  OR(Tag::LESS_EQUAL) \
+  OR(Tag::EQUAL) OR(Tag::NOT_EQUAL) OR(Tag::GREATER) OR(Tag::GREATER_EQUAL)
+
 Parser::Parser() {
   current_function_ = nullptr;
   index = -1;
-  // 预添加一个函数
+  // 预添加print函数
   Function fun = Function("print", false, Type::VOID, std::vector<Var>());
   function_table_["print"] = fun;
 }
@@ -36,8 +41,8 @@ void Parser::begin_parse(const std::string& file_name) {
   program();
 }
 
+// 对生成的指令进行后处理，给指令添加标号，消除不必要的goto，例如当goto的目标是自己的下一条语句时，去除goto
 void Parser::post_parse() {
-  // 对生成的指令进行后处理，给指令添加标号，消除不必要的goto，例如当goto的目标是自己的下一条语句时，去除goto
   for (auto iter = functions_.begin(); iter != functions_.end(); ++iter) {
     std::vector<InterInstruction>& insts = iter->get_instructions();
     for (auto inst_iter = insts.begin(); inst_iter != insts.end();
@@ -55,7 +60,7 @@ void Parser::post_parse() {
           inst_iter->removed = true;
         } else {
           if (index == insts.size()) {
-            inst_iter->result.value = ".end";
+            inst_iter->result.value = ".end_" + iter->name;
           } else {
             InterInstruction& jump_dest = insts[index];
             if (jump_dest.label.empty()) {
@@ -102,7 +107,6 @@ void Parser::program() {
     segment();
     program();
   }
-    
 }
 
 void Parser::segment() {
@@ -262,7 +266,7 @@ Statement Parser::statement() {
     if (match(Tag::LPAREN)) {
       BoolExpr b = or_expr();
       if (match(Tag::RPAREN)) {
-        unsigned int m = current_function_->get_next_instruction();
+        instr_number m = current_function_->get_next_instruction();
         b.back_patch(current_function_, BackPatchType::True, m);
         Statement s1 = block();
         s.next_list = merge(b.false_list, s1.next_list);
@@ -271,6 +275,28 @@ Statement Parser::statement() {
       }
     } else {
       recovery();
+    }
+  } else if (match(Tag::KW_DO)) {
+    // TODO 实现 do_while
+    block();
+    if (match(Tag::KW_WHILE)) {
+      BoolExpr b = or_expr();
+    }
+
+  } else if (match(Tag::KW_WHILE)) {
+    instr_number M1 = current_function_->get_next_instruction();
+    if (match(Tag::LPAREN)) {
+      BoolExpr B = or_expr();
+      if (match(Tag::RPAREN)) {
+        instr_number M2 = current_function_->get_next_instruction();
+        Statement S1 = block();
+        B.back_patch_list(current_function_, S1.next_list, M1);
+        B.back_patch(current_function_, BackPatchType::True, M2);
+        s.next_list = B.false_list;
+        InterInstruction jump = InterInstruction::gen_jump();
+        jump.result = Address{LITERAL_STRING, std::to_string(M1)};
+        add_instruction(&jump);
+      }
     }
   } else {
     Var var = expr();
@@ -657,10 +683,14 @@ Var Parser::idexpr(std::string name) {
     if (!fun.name.empty()) {
       // 从右往左压参数，可以支持不定长参数，所以不需要传参数个数
       std::cout << "function call occur : " << name << "()" << std::endl;
-      var = current_function_->gen_temp_var(fun.return_type);
-      add_instruction(new InterInstruction(var_to_address(var),
-                                           Operator::OP_CALL,
-                                           Address{LITERAL_STRING, name}, Address()));
+      Address addr_result = Address();
+      if (fun.return_type != Type::VOID && fun.return_type != Type::UNKNOWN) {
+        var = current_function_->gen_temp_var(fun.return_type);
+        addr_result = var_to_address(var);
+      }
+      add_instruction(new InterInstruction(addr_result, Operator::OP_CALL,
+                                           Address{LITERAL_STRING, name},
+                                           Address()));
     }
   } else {
     var = current_function_->get_variable(name);

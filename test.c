@@ -1,6 +1,6 @@
-int f(int a)
+int f(unsigned int a)
 {
-    if(a == 0)
+    if(a < 5)
     {
         return a;
     }

@@ -13,7 +13,8 @@ void init_keyword_table() {
   keyword_table["string"] = Tag::KW_STRING;
   keyword_table["if"] = Tag::KW_IF;
   keyword_table["else"] = Tag::KW_ELSE;
-  keyword_table["while"] = Tag::KW_ELSE;
+  keyword_table["do"] = Tag::KW_DO;
+  keyword_table["while"] = Tag::KW_WHILE;
   keyword_table["return"] = Tag::KW_RETURN;
   keyword_table["void"] = Tag::KW_VOID;
   keyword_table["for"] = Tag::KW_FOR;

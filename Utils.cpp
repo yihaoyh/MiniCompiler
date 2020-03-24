@@ -70,5 +70,6 @@ std::string gen_print_int(int value) {
           << ", %esi\n";
   sstream << "\tleaq	.LC0(%rip), %rdi\n";
   sstream << "\tcall	printf@PLT\n";
+  //sstream << "\tpopq %rbx\n";
   return sstream.str();
 }
