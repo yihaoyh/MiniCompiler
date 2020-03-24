@@ -214,8 +214,8 @@ class Parser {
 
   bool match(const Tag& tag);
 
-  // 参数传递
-  void para_transit();
+  // 参数传递，返回参数的字节长度
+  unsigned int para_transit();
 
   Function get_function(std::string);
 

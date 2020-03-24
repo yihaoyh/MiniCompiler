@@ -34,12 +34,9 @@ void Frame::add_param_in(std::string name, char offset) {
   var_offset_table[name] = offset;
 }
 
-void Frame::add_param_out(unsigned char length) {
-  if (length <= 0) {
-    return;
-  }
-  frame_offset_ -= length;
-}
+void Frame::add_param_out(unsigned char length) { frame_offset_ -= length; }
+
+void Frame::remove_param_out(unsigned char length) { frame_offset_ += length; }
 
 /*
  * 返回变量是否存在

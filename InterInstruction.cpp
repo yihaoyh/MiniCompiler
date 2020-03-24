@@ -71,8 +71,11 @@ std::string InterInstruction::to_string() {
       break;
     case Operator::OP_ASSIGN:
       break;
-    case Operator::OP_SET_PARAM:
-      ss << " set_param";
+    case Operator::OP_PUSH_PARAM:
+      ss << " push_param";
+      break;
+    case Operator::OP_POP_PARAM:
+      ss << " pop_param";
       break;
     case Operator::OP_RETURN:
       ss << " return ";

@@ -42,8 +42,9 @@ class CodeGen {
   std::string gen_load_variable(const std::string& reg_name, int offset);
   std::string gen_create_variable(const std::string& reg_name);
   std::string gen_save_variable(const std::string& reg_name, int offset);
-  std::string gen_call(const Var& result, const std::string& fun_name);
+  std::string gen_call(const Var& result, const std::string& fun_name, unsigned int param_length);
   std::string gen_set_param(const Var& param);
+  std::string gen_pop_param(unsigned int length);
   std::string gen_if_jump(Operator op, const Var& result, const Var& lval,
                           const Var& rval);
   std::string gen_if_false_jump(Operator op, const Var& result, const Var& lval,
@@ -65,7 +66,6 @@ class CodeGen {
   std::string gen_access_arg(const Var& var, const std::string& reg_name);
 
   void parse_params();
-  int get_type_length(const Type& type);
 
   Frame curr_frame_;
 

@@ -13,7 +13,7 @@ extern std::map<std::string, Tag> keyword_table;
 int main() {
   init_keyword_table();
   Parser parser;
-  parser.begin_parse("parser_test.txt");
+  parser.begin_parse("while_test.txt");
   parser.post_parse();
   parser.print_instructions();
 }

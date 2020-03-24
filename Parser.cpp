@@ -504,25 +504,26 @@ bool Parser::match(const Tag& tag) {
     return false;
   }
 }
-void Parser::para_transit() {
+unsigned int Parser::para_transit() {
+  unsigned int length = 0;
   Var var = expr();
   // 生成一个表达式的指令，再生成一个保存到参数列表的指令，这里传的是形参
   // 保存到参数列表在汇编中的实现是将表达式结果压栈（无论该变量之前是否已经保存在栈中）。
   // 因为通用的方式是将参数放在调用函数栈帧的底部
   std::cout << "parse one param" << std::endl;
   if (match(Tag::COMMA)) {
-    para_transit();
+    length = para_transit();
   }
-  // InterInstruction inst = ;
-  add_instruction(new InterInstruction(Address(), Operator::OP_SET_PARAM,
+  add_instruction(new InterInstruction(Address(), Operator::OP_PUSH_PARAM,
                                        var_to_address(var), Address()));
+  length += get_type_length(var.type);
+  return length;
 }
 // 对应代码 10 * a
 Var Parser::item() {
   Var var = factor();
   move_token();
   var = itemtail(var);
-  // std::cout << "item " << token_look_.get_name() << std::endl;
   return var;
 }
 
@@ -673,7 +674,7 @@ Var Parser::idexpr(std::string name) {
   Var var;
   if (match(Tag::LPAREN)) {
     // 处理传参
-    para_transit();
+    unsigned int param_length = para_transit();
     if (FIRST(Tag::RPAREN) == false) {
       recovery();
     }
@@ -690,7 +691,12 @@ Var Parser::idexpr(std::string name) {
       }
       add_instruction(new InterInstruction(addr_result, Operator::OP_CALL,
                                            Address{LITERAL_STRING, name},
-                                           Address()));
+          Address{LITERAL_NUMBER, std::to_string(param_length)}));
+      //if (param_length > 0) {
+      //  add_instruction(new InterInstruction(Address(), Operator::OP_POP_PARAM,
+      //                                       Address{LITERAL_NUMBER, std::to_string(param_length)},
+      //                                       Address()));
+      //}
     }
   } else {
     var = current_function_->get_variable(name);

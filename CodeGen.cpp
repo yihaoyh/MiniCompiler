@@ -241,12 +241,13 @@ std::string CodeGen::gen_save_variable(const std::string& reg_name,
   return sstream.str();
 }
 
-std::string CodeGen::gen_call(const Var& result, const std::string& fun_name) {
+std::string CodeGen::gen_call(const Var& result, const std::string& fun_name, unsigned int param_length) {
   if (fun_name == "print") {
     return gen_print_int(0);
   }
   std::stringstream sstream;
   sstream << "\tcall " << fun_name << "\n";
+  sstream << gen_pop_param(param_length);
   if (result.tag == Tag::IDENTIFIER) {
     sstream << "\tmovq %rax, %rbx\n";
     sstream << gen_create_variable(RBX);
@@ -266,6 +267,19 @@ std::string CodeGen::gen_set_param(const Var& param) {
   code += gen_access_arg(param, RBX);
   code += "\tpushq %rbx\n";
   curr_frame_.add_param_out(get_type_length(param.type));
+  return code;
+}
+
+std::string CodeGen::gen_pop_param(unsigned int length) { 
+  //if (param.tag != Tag::LT_NUMBER || param.type != Type::INT) {
+  //  std::string error_msg =
+  //      "invalid param of instruction pop param";
+  //  error(error_msg.c_str());
+  //  return "";
+  //}
+  curr_frame_.remove_param_out(length);
+  std::string code = "";
+  code += "\taddq $" +std::to_string(length) +" ,%rsp\n";
   return code;
 }
 
@@ -393,10 +407,12 @@ std::string CodeGen::gen_normal(Operator op, const Var& result, const Var& arg1,
         return "";
       }
       return gen_assign(result, arg1);
-    case Operator::OP_SET_PARAM:
+    case Operator::OP_PUSH_PARAM:
       return gen_set_param(arg1);
     case Operator::OP_CALL:
-      return gen_call(result, arg1.value_string);
+      return gen_call(result, arg1.value_string, std::stoi(arg2.value_string));
+    //case Operator::OP_POP_PARAM:
+      //return gen_pop_param(arg1);
     case Operator::OP_RETURN:
       return gen_return(arg1);
     default:
@@ -475,17 +491,6 @@ void CodeGen::parse_params() {
     int length = get_type_length(var.type);
     offset += length;
   }
-}
-
-/*
-    获取类型的长度，单位为字节
-*/
-int CodeGen::get_type_length(const Type& type) {
-  switch (type) {
-    case Type::INT:
-      return 8;
-  }
-  return 0;
 }
 
 bool CodeGen::variable_exist_check(const std::string& var_name) {
