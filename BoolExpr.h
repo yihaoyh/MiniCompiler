@@ -5,15 +5,18 @@
 #include "Common.h"
 #include "Function.h"
 #include "InterInstruction.h"
+
+enum class BackPatchType { True, False };
+
 class BoolExpr {
  public:
   /*
       回填跳转列表
       function 表示当前函数
-      flag 1对应true_list,0对应false_list
+      type 跳转类型
       label表示目标标号
   */
-  void back_patch(Function* function, int flag, instr_number label);
+  void back_patch(Function* function, BackPatchType type, instr_number label);
   static void back_patch_list(Function* function,
                               const std::vector<instr_number>& list,
                               instr_number label);

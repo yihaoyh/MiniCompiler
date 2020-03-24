@@ -57,6 +57,7 @@ std::string CodeGen::parse_instruction(const InterInstruction& inst) {
   } else if (inst.type == Inst_Type::NORMAL) {
     return code + gen_normal(inst.op, result, arg1, arg2);
   }
+  return "";
 }
 
 std::string CodeGen::gen_header(const std::string& fun_name) {

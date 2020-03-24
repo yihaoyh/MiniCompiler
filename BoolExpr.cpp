@@ -1,13 +1,15 @@
 ﻿#include "BoolExpr.h"
-#include <sstream>
+
 #include <iostream>
+#include <sstream>
 #include <string>
 
-void BoolExpr::back_patch(Function* function, int flag, instr_number label) {
-  if (flag == 0) {
-    back_patch_list(function, false_list, label);
-  } else if (flag == 1) {
+void BoolExpr::back_patch(Function* function, BackPatchType type,
+                          instr_number label) {
+  if (type == BackPatchType::True) {
     back_patch_list(function, true_list, label);
+  } else if (type == BackPatchType::False) {
+    back_patch_list(function, false_list, label);
   }
 }
 

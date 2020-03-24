@@ -101,7 +101,6 @@ void Parser::program() {
   } else {
     segment();
     program();
-
   }
     
 }
@@ -264,7 +263,7 @@ Statement Parser::statement() {
       BoolExpr b = or_expr();
       if (match(Tag::RPAREN)) {
         unsigned int m = current_function_->get_next_instruction();
-        b.back_patch(current_function_, 1, m);
+        b.back_patch(current_function_, BackPatchType::True, m);
         Statement s1 = block();
         s.next_list = merge(b.false_list, s1.next_list);
       } else {
@@ -327,7 +326,7 @@ BoolExpr Parser::or_tail(BoolExpr* B1) {
         B.falselist = B2.falselist;
     */
     unsigned int M = current_function_->get_next_instruction();
-    B1->back_patch(current_function_, 0, M);
+    B1->back_patch(current_function_, BackPatchType::False, M);
     BoolExpr B, B2;
     B2 = and_expr();
     B.true_list = merge(B1->true_list, B2.true_list);
@@ -352,7 +351,7 @@ BoolExpr Parser::and_tail(BoolExpr* B1) {
         B.falselist = merge(B1.falselist, B2.falselist)
     */
     unsigned int M = current_function_->get_next_instruction();
-    B1->back_patch(current_function_, 1, M);
+    B1->back_patch(current_function_, BackPatchType::True, M);
     BoolExpr B, B2;
     B2 = compare_expr();
     B.true_list = B2.true_list;
@@ -470,10 +469,7 @@ Var Parser::alo_tail(const Var& arg1) {
   }
   return arg1;
 }
-/*BoolExpr Parser::bool_expr
-{
-    return BoolExpr();
-}*/
+
 bool Parser::match(const Tag& tag) {
   if (token_look_.tag() == tag) {
     move_token();
@@ -662,7 +658,6 @@ Var Parser::idexpr(std::string name) {
       // 从右往左压参数，可以支持不定长参数，所以不需要传参数个数
       std::cout << "function call occur : " << name << "()" << std::endl;
       var = current_function_->gen_temp_var(fun.return_type);
-      // InterInstruction inst = ;
       add_instruction(new InterInstruction(var_to_address(var),
                                            Operator::OP_CALL,
                                            Address{LITERAL_STRING, name}, Address()));
@@ -683,12 +678,6 @@ instr_number Parser::add_instruction(InterInstruction* instrunction) {
   assert(current_function_ != nullptr);
   return current_function_->add_instruction(instrunction);
 }
-
-// instr_number Parser::add_instruction(const InterInstruction&& instrunction)
-//{
-//    assert(current_function_ != nullptr);
-//    return current_function_->add_instruction(instrunction);
-//}
 
 /*
  * 向后移动一个token
