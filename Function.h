@@ -1,7 +1,7 @@
 ﻿#pragma once
 #include <string>
 #include <vector>
-
+#include <map>
 #include "InterInstruction.h"
 #include "SymTable.h"
 #include "Var.h"
@@ -18,6 +18,7 @@ class Function {
   instr_number get_next_instruction();
   void put_variable(const Var& var);
   const Var get_variable(const std::string& name) const;
+  const std::vector<Var> get_variable_list() const;
   Var gen_temp_var(const Type type);
   std::string gen_label();
 

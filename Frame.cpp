@@ -57,6 +57,6 @@ int Frame::get_variable_offset(std::string name) {
 }
 
 /*
-    获取栈帧的长度，因为存放本地变量申请了空间，所以过程退出时要释放这些空间
+    获取栈帧的长度
 */
-int Frame::get_frame_length() { return -frame_offset_; }
+unsigned int Frame::get_length() { return -frame_offset_; }

@@ -23,7 +23,7 @@ class Frame {
   void remove_param_out(unsigned char length);
   bool is_variable_exists(std::string name);
   int get_variable_offset(std::string name);
-  int get_frame_length();
+  unsigned int get_length();
 
  private:
   std::map<std::string, int> var_offset_table;  // 变量偏移表

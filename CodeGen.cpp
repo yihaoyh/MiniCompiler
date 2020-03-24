@@ -28,6 +28,11 @@ std::string CodeGen::parse_functions(const std::vector<Function>& functions) {
 std::string CodeGen::parse_function(const Function& fun) {
   std::vector<InterInstruction> inst_list = fun.get_const_instructions();
   std::string code = "";
+  std::vector<Var> var_list = fun.get_variable_list();
+  for (auto iter = var_list.begin(); iter != var_list.end(); ++iter) {
+    curr_frame_.add_local(iter->name, get_type_size(iter->type));
+  }
+
   code += gen_header(curr_frame_.fun_name);
   code += gen_enter_proc();
   for (auto iter = inst_list.begin(); iter != inst_list.end(); ++iter) {
@@ -107,7 +112,7 @@ std::string CodeGen::gen_assign(const Var& lval, const Var& rval) {
     code += gen_save_variable(RBX, offset);
   } else {
     code += gen_create_variable(RBX);
-    curr_frame_.add_local(lval.name, get_type_length(lval.type));
+    curr_frame_.add_local(lval.name, get_type_size(lval.type));
   }
   return code;
 }
@@ -158,7 +163,7 @@ std::string CodeGen::gen_low_op(Operator op, const Var& result, const Var& lval,
     code += gen_save_variable(RBX, offset);
   } else {
     code += gen_create_variable(RBX);
-    curr_frame_.add_local(result.name, get_type_length(result.type));
+    curr_frame_.add_local(result.name, get_type_size(result.type));
   }
   return code;
 }
@@ -167,8 +172,11 @@ std::string CodeGen::gen_low_op(Operator op, const Var& result, const Var& lval,
     生成进入过程时的代码
 */
 std::string CodeGen::gen_enter_proc() {
-  return "\tpushq %rbp\n"
-         "\tmovq %rsp, %rbp\n";
+  std::string code =
+      "\tpushq %rbp\n"
+      "\tmovq %rsp, %rbp\n";
+  code += "\tsubq $" + std::to_string(curr_frame_.get_length()) + ", %rsp\n";
+  return code;
 }
 
 /*
@@ -241,7 +249,8 @@ std::string CodeGen::gen_save_variable(const std::string& reg_name,
   return sstream.str();
 }
 
-std::string CodeGen::gen_call(const Var& result, const std::string& fun_name, unsigned int param_length) {
+std::string CodeGen::gen_call(const Var& result, const std::string& fun_name,
+                              unsigned int param_length) {
   if (fun_name == "print") {
     return gen_print_int(0);
   }
@@ -249,9 +258,8 @@ std::string CodeGen::gen_call(const Var& result, const std::string& fun_name, un
   sstream << "\tcall " << fun_name << "\n";
   sstream << gen_pop_param(param_length);
   if (result.tag == Tag::IDENTIFIER) {
-    sstream << "\tmovq %rax, %rbx\n";
-    sstream << gen_create_variable(RBX);
-    curr_frame_.add_local(result.name, get_type_length(result.type));
+    int offset = curr_frame_.get_variable_offset(result.name);
+    sstream << gen_save_variable(RAX, offset);
   }
   return sstream.str();
 }
@@ -266,12 +274,12 @@ std::string CodeGen::gen_set_param(const Var& param) {
   std::string code = "";
   code += gen_access_arg(param, RBX);
   code += "\tpushq %rbx\n";
-  curr_frame_.add_param_out(get_type_length(param.type));
+  curr_frame_.add_param_out(get_type_size(param.type));
   return code;
 }
 
-std::string CodeGen::gen_pop_param(unsigned int length) { 
-  //if (param.tag != Tag::LT_NUMBER || param.type != Type::INT) {
+std::string CodeGen::gen_pop_param(unsigned int length) {
+  // if (param.tag != Tag::LT_NUMBER || param.type != Type::INT) {
   //  std::string error_msg =
   //      "invalid param of instruction pop param";
   //  error(error_msg.c_str());
@@ -279,7 +287,7 @@ std::string CodeGen::gen_pop_param(unsigned int length) {
   //}
   curr_frame_.remove_param_out(length);
   std::string code = "";
-  code += "\taddq $" +std::to_string(length) +" ,%rsp\n";
+  code += "\taddq $" + std::to_string(length) + " ,%rsp\n";
   return code;
 }
 
@@ -411,8 +419,8 @@ std::string CodeGen::gen_normal(Operator op, const Var& result, const Var& arg1,
       return gen_set_param(arg1);
     case Operator::OP_CALL:
       return gen_call(result, arg1.value_string, std::stoi(arg2.value_string));
-    //case Operator::OP_POP_PARAM:
-      //return gen_pop_param(arg1);
+    // case Operator::OP_POP_PARAM:
+    // return gen_pop_param(arg1);
     case Operator::OP_RETURN:
       return gen_return(arg1);
     default:
@@ -488,7 +496,7 @@ void CodeGen::parse_params() {
   for (unsigned int i = 0; i < params.size(); i++) {
     Var var = params[i];
     curr_frame_.add_param_in(var.name, offset);
-    int length = get_type_length(var.type);
+    int length = get_type_size(var.type);
     offset += length;
   }
 }

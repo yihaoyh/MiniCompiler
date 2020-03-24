@@ -516,7 +516,7 @@ unsigned int Parser::para_transit() {
   }
   add_instruction(new InterInstruction(Address(), Operator::OP_PUSH_PARAM,
                                        var_to_address(var), Address()));
-  length += get_type_length(var.type);
+  length += get_type_size(var.type);
   return length;
 }
 // 对应代码 10 * a
@@ -689,12 +689,14 @@ Var Parser::idexpr(std::string name) {
         var = current_function_->gen_temp_var(fun.return_type);
         addr_result = var_to_address(var);
       }
-      add_instruction(new InterInstruction(addr_result, Operator::OP_CALL,
-                                           Address{LITERAL_STRING, name},
+      add_instruction(new InterInstruction(
+          addr_result, Operator::OP_CALL, Address{LITERAL_STRING, name},
           Address{LITERAL_NUMBER, std::to_string(param_length)}));
-      //if (param_length > 0) {
-      //  add_instruction(new InterInstruction(Address(), Operator::OP_POP_PARAM,
-      //                                       Address{LITERAL_NUMBER, std::to_string(param_length)},
+      // if (param_length > 0) {
+      //  add_instruction(new InterInstruction(Address(),
+      //  Operator::OP_POP_PARAM,
+      //                                       Address{LITERAL_NUMBER,
+      //                                       std::to_string(param_length)},
       //                                       Address()));
       //}
     }
@@ -706,6 +708,9 @@ Var Parser::idexpr(std::string name) {
 }
 
 void Parser::put_variable(Var var) {
+  if (var.tag != Tag::IDENTIFIER) {
+    return;
+  }
   assert(current_function_ != nullptr);
   current_function_->put_variable(var);
 }

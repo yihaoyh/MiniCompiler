@@ -34,7 +34,7 @@ Type tag_to_type(Tag tag) {
 /*
     获取类型的长度，单位为字节
 */
-unsigned int get_type_length(const Type& type) {
+unsigned int get_type_size(const Type& type) {
   switch (type) {
     case Type::INT:
       return 8;

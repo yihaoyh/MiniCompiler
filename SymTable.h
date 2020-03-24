@@ -16,6 +16,7 @@ class SymTable {
   Var get_const_variable(std::string) const;
   unsigned int get_next_instruction();
   Var gen_temp_var(Type type);  // 生成临时变量
+  const std::vector<Var> get_variable_list() const;
  private:
   std::map<std::string, Var> var_table_;      // 变量表
   std::map<std::string, Var> temp_var_table;  // 临时变量表

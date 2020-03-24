@@ -46,6 +46,10 @@ const Var Function::get_variable(const std::string& name) const {
   return sym_table_.get_const_variable(name);
 }
 
+const std::vector<Var> Function::get_variable_list() const {
+  return sym_table_.get_variable_list();
+}
+
 Var Function::gen_temp_var(const Type type) {
   Var var = sym_table_.gen_temp_var(type);
   put_variable(var);

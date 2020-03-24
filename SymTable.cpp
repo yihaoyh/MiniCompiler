@@ -27,3 +27,11 @@ Var SymTable::gen_temp_var(Type type) {
   temp_var_table[name] = var;
   return var;
 }
+
+const std::vector<Var> SymTable::get_variable_list() const {
+  std::vector<Var> vars;
+  for (auto iter = var_table_.cbegin(); iter != var_table_.cend(); ++iter) {
+    vars.push_back(iter->second);
+  }
+  return vars;
+}
