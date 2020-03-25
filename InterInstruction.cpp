@@ -40,7 +40,12 @@ InterInstruction InterInstruction::gen_if_false_jump(Operator op, Address arg1,
 }
 
 InterInstruction InterInstruction::gen_jump() {
-  return InterInstruction(Inst_Type::JUMP, Address(), Operator::OP_JUMP,
+  return InterInstruction(Inst_Type::JUMP, Address::label_addr(0), Operator::OP_JUMP,
+                          Address(), Address());
+}
+
+InterInstruction InterInstruction::gen_jump(instr_number number) {
+  return InterInstruction(Inst_Type::JUMP, Address::label_addr(number), Operator::OP_JUMP,
                           Address(), Address());
 }
 
@@ -97,4 +102,8 @@ Address var_to_address(const Var& var) {
     return Address{LITERAL_NUMBER, var.value_string};
   }
   return Address{EMPTY, ""};
+}
+
+Address_ Address_::label_addr(instr_number number) { 
+    return Address{LITERAL_STRING, std::to_string(number)};
 }

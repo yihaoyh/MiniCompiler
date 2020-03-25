@@ -21,6 +21,8 @@ struct Address_ {
    值的字符串形式，type为NAME时为名字，为字面量时需要从字符串进行转换。
   */
   std::string value;
+
+  static Address_ label_addr(instr_number number);
 };
 typedef Address_ Address;
 
@@ -35,6 +37,7 @@ class InterInstruction {
   static InterInstruction gen_if_false_jump(Operator op, Address arg1,
                                             Address arg2);
   static InterInstruction gen_jump();
+  static InterInstruction gen_jump(instr_number number);
   InterInstruction(const Address result, const Operator op, const Address arg1,
                    const Address arg2);
   InterInstruction(const Inst_Type type, const Address result,

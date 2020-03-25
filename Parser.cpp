@@ -307,39 +307,24 @@ Statement Parser::statement() {
         back_patch(S1.next, M2.instr)
         gen('goto', M2) after S1
     */
-    // TODO 代码太过于复杂，需要重构
-    if (!match(Tag::LPAREN)) {
-      recovery();
-      return s;
-    }
+    // TODO 后期重构，不要边解析边翻译，而是把解析的中间结果进行翻译
+    expect(Tag::LPAREN);
     Var E1 = expr();
-    if (!match(Tag::SEMICOLON)) {
-      recovery();
-      return s;
-    }
-    instr_number M1 = current_function_->get_next_instruction();
-    // TODO or_expr不容易记忆
-    BoolExpr B = or_expr();
+    expect(Tag::SEMICOLON);
+    instr_number M1 = next_instr();
+    BoolExpr B = bool_expr();
     s.next_list = B.false_list;
-    if (!match(Tag::SEMICOLON)) {
-      recovery();
-      return s;
-    }
-    instr_number M2 = current_function_->get_next_instruction();
+    expect(Tag::SEMICOLON);
+    instr_number M2 = next_instr();
     Var E2 = expr();
-    InterInstruction jump1 = InterInstruction::gen_jump();
-    jump1.result = Address{LITERAL_STRING, std::to_string(M1)};
+    InterInstruction jump1 = InterInstruction::gen_jump(M1);
     add_instruction(&jump1);
-    if (!match(Tag::RPAREN)) {
-      recovery();
-      return s;
-    }
-    instr_number M3 = current_function_->get_next_instruction();
+    expect(Tag::RPAREN);
+    instr_number M3 = next_instr();
     BoolExpr::back_patch_list(current_function_, B.true_list, M3);
     Statement S1 = block();
     BoolExpr::back_patch_list(current_function_, S1.next_list, M2);
-    InterInstruction jump2 = InterInstruction::gen_jump();
-    jump2.result = Address{LITERAL_STRING, std::to_string(M2)};
+    InterInstruction jump2 = InterInstruction::gen_jump(M2);
     add_instruction(&jump2);
   } else {
     Var var = expr();
@@ -382,6 +367,8 @@ void Parser::assign_tail(Var lvalue) {
                                       var_to_address(rvalue), Address()));
   }
 }
+
+BoolExpr Parser::bool_expr() { return or_expr(); }
 
 BoolExpr Parser::or_expr() {
   BoolExpr expr = and_expr();
@@ -789,4 +776,12 @@ std::vector<instr_number> Parser::merge(std::vector<instr_number> list1,
   std::vector<instr_number> result = std::vector<instr_number>(list1);
   result.insert(result.end(), list2.begin(), list2.end());
   return result;
+}
+
+instr_number Parser::next_instr() {
+  return current_function_->get_next_instruction();
+}
+
+void Parser::expect(Tag tag) {
+  if (!match(tag)) recovery();
 }

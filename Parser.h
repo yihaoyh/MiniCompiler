@@ -109,6 +109,8 @@ class Parser {
   */
   void assign_tail(Var var);
 
+  BoolExpr bool_expr();
+
   BoolExpr or_expr();
 
   BoolExpr or_tail(BoolExpr* expr);
@@ -226,6 +228,10 @@ class Parser {
   // 合并跳转列表
   std::vector<instr_number> merge(std::vector<instr_number> list1,
                                   std::vector<instr_number> list2);
+
+  instr_number next_instr();
+
+  void expect(Tag tag);
 
  private:
   Token& token_look_ = Token::unknown_token;
