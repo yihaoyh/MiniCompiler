@@ -247,13 +247,13 @@ Statement Parser::subprogram() {
 
 // <expr> <expr> SEMICOLON | KW_RETURN <expr> SEMICOLON
 Statement Parser::statement() {
-  Statement s;
+  Statement S;
   if (match(Tag::KW_RETURN)) {
     Var result = expr();
     if (match(Tag::SEMICOLON)) {
       add_instruction(&InterInstruction(Address(), Operator::OP_RETURN,
                                         var_to_address(result), Address()));
-      s.next_list.clear();
+      S.next_list.clear();
     } else {
       recovery();
     }
@@ -263,19 +263,13 @@ Statement Parser::statement() {
         backpatch(B.truelist, M.instr)
         s.nextlist = merge(B.falselist, S1.nextlist)
     */
-    if (match(Tag::LPAREN)) {
-      BoolExpr b = or_expr();
-      if (match(Tag::RPAREN)) {
-        instr_number m = current_function_->get_next_instruction();
-        b.back_patch(current_function_, BackPatchType::True, m);
-        Statement s1 = block();
-        s.next_list = merge(b.false_list, s1.next_list);
-      } else {
-        recovery();
-      }
-    } else {
-      recovery();
-    }
+    expect(Tag::LPAREN);
+    BoolExpr B = bool_expr();
+    expect(Tag::RPAREN);
+    instr_number M = next_instr();
+    B.back_patch(current_function_, BackPatchType::True, M);
+    Statement S1 = block();
+    S.next_list = merge(B.false_list, S1.next_list);
   } else if (match(Tag::KW_DO)) {
     // TODO 实现 do_while
     block();
@@ -285,19 +279,16 @@ Statement Parser::statement() {
 
   } else if (match(Tag::KW_WHILE)) {
     instr_number M1 = current_function_->get_next_instruction();
-    if (match(Tag::LPAREN)) {
-      BoolExpr B = or_expr();
-      if (match(Tag::RPAREN)) {
-        instr_number M2 = current_function_->get_next_instruction();
-        Statement S1 = block();
-        BoolExpr::back_patch_list(current_function_, S1.next_list, M1);
-        B.back_patch(current_function_, BackPatchType::True, M2);
-        s.next_list = B.false_list;
-        InterInstruction jump = InterInstruction::gen_jump();
-        jump.result = Address{LITERAL_STRING, std::to_string(M1)};
-        add_instruction(&jump);
-      }
-    }
+    expect(Tag::LPAREN);
+    BoolExpr B = bool_expr();
+    expect(Tag::RPAREN);
+    instr_number M2 = current_function_->get_next_instruction();
+    Statement S1 = block();
+    BoolExpr::back_patch_list(current_function_, S1.next_list, M1);
+    B.back_patch(current_function_, BackPatchType::True, M2);
+    S.next_list = B.false_list;
+    InterInstruction jump = InterInstruction::gen_jump(M1);
+    add_instruction(&jump);
   } else if (match(Tag::KW_FOR)) {
     /*
         S -> for(E1;M1 B;M2 E2) M3 S1
@@ -313,7 +304,7 @@ Statement Parser::statement() {
     expect(Tag::SEMICOLON);
     instr_number M1 = next_instr();
     BoolExpr B = bool_expr();
-    s.next_list = B.false_list;
+    S.next_list = B.false_list;
     expect(Tag::SEMICOLON);
     instr_number M2 = next_instr();
     Var E2 = expr();
@@ -330,13 +321,13 @@ Statement Parser::statement() {
     Var var = expr();
     put_variable(var);
     if (match(Tag::SEMICOLON)) {
-      s.next_list.clear();
+      S.next_list.clear();
     } else {
       recovery();
-      return s;
+      return S;
     }
   }
-  return s;
+  return S;
 }
 
 /*
