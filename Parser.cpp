@@ -19,7 +19,7 @@
   OR(Tag::LT_CHAR)   \
   OR(Tag::LT_STRING) OR(Tag::IDENTIFIER) OR(Tag::SUB) OR(Tag::MULTIPLY)
 #define STATEMENT_FIRST \
-  EXPR_FIRST OR(Tag::KW_IF) OR(Tag::KW_RETURN) OR(Tag::KW_WHILE)
+  EXPR_FIRST OR(Tag::KW_IF) OR(Tag::KW_RETURN) OR(Tag::KW_WHILE) OR(Tag::KW_FOR)
 #define COMPARE_FIRST \
   FIRST(Tag::LESS)    \
   OR(Tag::LESS_EQUAL) \
@@ -298,6 +298,49 @@ Statement Parser::statement() {
         add_instruction(&jump);
       }
     }
+  } else if (match(Tag::KW_FOR)) {
+    /*
+        S -> for(E1;M1 B;M2 E2) M3 S1
+        back_patch(B.truelist, M3.instr)
+        S.next = B.falselist
+        gen('goto', M1) after E2
+        back_patch(S1.next, M2.instr)
+        gen('goto', M2) after S1
+    */
+    // TODO 代码太过于复杂，需要重构
+    if (!match(Tag::LPAREN)) {
+      recovery();
+      return s;
+    }
+    Var E1 = expr();
+    if (!match(Tag::SEMICOLON)) {
+      recovery();
+      return s;
+    }
+    instr_number M1 = current_function_->get_next_instruction();
+    // TODO or_expr不容易记忆
+    BoolExpr B = or_expr();
+    s.next_list = B.false_list;
+    if (!match(Tag::SEMICOLON)) {
+      recovery();
+      return s;
+    }
+    instr_number M2 = current_function_->get_next_instruction();
+    Var E2 = expr();
+    InterInstruction jump1 = InterInstruction::gen_jump();
+    jump1.result = Address{LITERAL_STRING, std::to_string(M1)};
+    add_instruction(&jump1);
+    if (!match(Tag::RPAREN)) {
+      recovery();
+      return s;
+    }
+    instr_number M3 = current_function_->get_next_instruction();
+    BoolExpr::back_patch_list(current_function_, B.true_list, M3);
+    Statement S1 = block();
+    BoolExpr::back_patch_list(current_function_, S1.next_list, M2);
+    InterInstruction jump2 = InterInstruction::gen_jump();
+    jump2.result = Address{LITERAL_STRING, std::to_string(M2)};
+    add_instruction(&jump2);
   } else {
     Var var = expr();
     put_variable(var);
@@ -305,6 +348,7 @@ Statement Parser::statement() {
       s.next_list.clear();
     } else {
       recovery();
+      return s;
     }
   }
   return s;

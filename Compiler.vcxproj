@@ -185,6 +185,7 @@
     <None Include="new_code.s" />
   </ItemGroup>
   <ItemGroup>
+    <Text Include="for_test.txt" />
     <Text Include="parser_test.txt" />
     <Text Include="while_test.txt" />
   </ItemGroup>
