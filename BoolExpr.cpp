@@ -7,9 +7,9 @@
 void BoolExpr::back_patch(Function* function, BackPatchType type,
                           instr_number label) {
   if (type == BackPatchType::True) {
-    back_patch_list(function, true_list, label);
+    BoolExpr::back_patch_list(function, true_list, label);
   } else if (type == BackPatchType::False) {
-    back_patch_list(function, false_list, label);
+    BoolExpr::back_patch_list(function, false_list, label);
   }
 }
 

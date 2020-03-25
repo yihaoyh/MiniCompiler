@@ -290,7 +290,7 @@ Statement Parser::statement() {
       if (match(Tag::RPAREN)) {
         instr_number M2 = current_function_->get_next_instruction();
         Statement S1 = block();
-        B.back_patch_list(current_function_, S1.next_list, M1);
+        BoolExpr::back_patch_list(current_function_, S1.next_list, M1);
         B.back_patch(current_function_, BackPatchType::True, M2);
         s.next_list = B.false_list;
         InterInstruction jump = InterInstruction::gen_jump();
