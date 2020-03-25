@@ -160,6 +160,7 @@
     <ClCompile Include="Statement.cpp" />
     <ClCompile Include="SymTable.cpp" />
     <ClCompile Include="Type.cpp" />
+    <ClCompile Include="TypeExpr.cpp" />
     <ClCompile Include="Utils.cpp" />
     <ClCompile Include="Var.cpp" />
   </ItemGroup>
@@ -177,6 +178,7 @@
     <ClInclude Include="Statement.h" />
     <ClInclude Include="SymTable.h" />
     <ClInclude Include="Type.h" />
+    <ClInclude Include="TypeExpr.h" />
     <ClInclude Include="Utils.h" />
     <ClInclude Include="Var.h" />
   </ItemGroup>

@@ -37,6 +37,8 @@ class Parser {
   */
   Type type();
 
+  Type type_tail(Type type);
+
   /*
       变量、函数的声明或定义
       <def>->ID <idtail>

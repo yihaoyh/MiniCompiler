@@ -123,6 +123,7 @@ Type Parser::type() {
     return Type::UNKNOWN;
   }
 }
+Type Parser::type_tail(Type type) { return Type(); }
 // <def>->ID <idtail> 代码形式如 " a = a + b"
 void Parser::def(const Type& type) {
   std::string name = "";

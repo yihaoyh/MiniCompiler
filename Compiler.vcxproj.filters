@@ -60,6 +60,9 @@
     <ClCompile Include="Statement.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="TypeExpr.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Lexer.h">
@@ -105,6 +108,9 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="Statement.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="TypeExpr.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
