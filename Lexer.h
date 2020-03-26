@@ -139,7 +139,7 @@ class Token {
 
   Token(Tag tag, std::string str) : tag_{tag}, value_{str} {}
 
-  Tag tag() { return tag_; }
+  Tag get_tag() { return tag_; }
 
   std::string get_name() { return value_; }
 

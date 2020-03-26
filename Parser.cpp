@@ -9,8 +9,8 @@
 #include "CodeGen.h"
 #include "Utils.h"
 
-#define FIRST(TAG) token_look_.tag() == TAG
-#define OR(TAG) || token_look_.tag() == TAG
+#define FIRST(TAG) token_look_.get_tag() == TAG
+#define OR(TAG) || token_look_.get_tag() == TAG
 #define TYPE_FIRST \
   FIRST(Tag::KW_INT) OR(Tag::KW_CHAR) OR(Tag::KW_STRING) OR(Tag::KW_VOID)
 #define EXPR_FIRST   \
@@ -29,7 +29,8 @@ Parser::Parser() {
   current_function_ = nullptr;
   index = -1;
   // 预添加print函数
-  Function fun = Function("print", false, base_type(Type::VOID), std::vector<Var>());
+  Function fun =
+      Function("print", false, base_type(Type::VOID), std::vector<Var>());
   function_table_["print"] = fun;
 }
 void Parser::begin_parse(const std::string& file_name) {
@@ -117,8 +118,8 @@ void Parser::segment() {
 
 TypeExpr Parser::type() {
   if (TYPE_FIRST) {
-    TypeExpr expr = base_type(tag_to_type(token_look_.tag()));
-    return type_tail(expr);
+    TypeExpr expr = base_type(tag_to_type(token_look_.get_tag()));
+    return expr;
   } else {
     recovery();
     return UNKNOWN_TYPE_EXPR;
@@ -126,7 +127,7 @@ TypeExpr Parser::type() {
 }
 TypeExpr Parser::type_tail(TypeExpr& t_expr) { return t_expr; }
 // <def>->ID <idtail> 代码形式如 " a = a + b"
-void Parser::def(const TypeExpr& t_expr) {
+void Parser::def(TypeExpr& t_expr) {
   std::string name = "";
   if (FIRST(Tag::IDENTIFIER)) {
     name = token_look_.get_name();
@@ -134,7 +135,7 @@ void Parser::def(const TypeExpr& t_expr) {
   } else {
     recovery();
   }
-  Var var = idtail(t_expr, name);
+  Var var = idtail(&t_expr, name);
 }
 
 Var Parser::varrdef(Var result) { return init(result); }
@@ -158,11 +159,7 @@ Var Parser::init(Var result) {
     add_instruction(&InterInstruction(var_to_address(result),
                                       Operator::OP_ASSIGN, var_to_address(var),
                                       Address()));
-  } else if (FIRST(Tag::END_OF_FILE)) {
-    return var;
-  } else {
-    recovery();
-  }
+  } 
   return var;
 }
 
@@ -171,10 +168,14 @@ void Parser::deflist() {
 }
 
 // <defdata>->ID <varrdef> 对应代码"a = 10 * b"
-void Parser::defdata(const TypeExpr& t_expr) {
+void Parser::defdata(TypeExpr& t_expr) {
   if (FIRST(Tag::IDENTIFIER)) {
     std::string name = token_look_.get_name();
     move_token();
+    TypeExpr* array = decl_array(t_expr.type);
+    if (array != nullptr) {
+      t_expr = *array;
+    }
     Var result = Var::create_id(name, t_expr);
     put_variable(result);
     Var arg1 = varrdef(result);
@@ -183,12 +184,13 @@ void Parser::defdata(const TypeExpr& t_expr) {
 
 void Parser::paradata(std::vector<Var>* params) {
   if (TYPE_FIRST) {
-    Type type = tag_to_type(token_look_.tag());
+    Type type = tag_to_type(token_look_.get_tag());
     move_token();
     if (FIRST(Tag::IDENTIFIER)) {
       std::cout << "para name " << token_look_.get_name() << std::endl;
       // 将参数类型添加到函数
-      params->push_back(Var::create_id(token_look_.get_name(), base_type(type)));
+      params->push_back(
+          Var::create_id(token_look_.get_name(), base_type(type)));
       move_token();
     }
   }
@@ -458,7 +460,7 @@ void Parser::operand() {}
 
 Operator Parser::op_low() {
   if (FIRST(Tag::ADD) OR(Tag::SUB)) {
-    switch (token_look_.tag()) {
+    switch (token_look_.get_tag()) {
       case Tag::ADD:
         return Operator::OP_ADD;
       case Tag::SUB:
@@ -471,7 +473,7 @@ Operator Parser::op_low() {
 
 Operator Parser::op_compare() {
   if (COMPARE_FIRST) {
-    switch (token_look_.tag()) {
+    switch (token_look_.get_tag()) {
       case Tag::LESS:
         return Operator::OP_LESS;
       case Tag::LESS_EQUAL:
@@ -518,7 +520,7 @@ Var Parser::alo_tail(const Var& arg1) {
 }
 
 bool Parser::match(const Tag& tag) {
-  if (token_look_.tag() == tag) {
+  if (token_look_.get_tag() == tag) {
     move_token();
     return true;
   } else {
@@ -570,7 +572,7 @@ Var Parser::itemtail(const Var& arg1) {
 
 Operator Parser::op_high() {
   if (FIRST(Tag::MULTIPLY) OR(Tag::DIVIDE)) {
-    switch (token_look_.tag()) {
+    switch (token_look_.get_tag()) {
       case Tag::MULTIPLY:
         return Operator::OP_MUL;
       case Tag::DIVIDE:
@@ -611,7 +613,7 @@ Var Parser::elem() {
 
 Var Parser::literal() {
   if (FIRST(Tag::LT_NUMBER) OR(Tag::LT_CHAR) OR(Tag::LT_STRING)) {
-    Type type = tag_to_type(token_look_.tag());
+    Type type = tag_to_type(token_look_.get_tag());
 
     if (type == Type::UNKNOWN) {
       error("can not parse the type of literal:");
@@ -632,11 +634,13 @@ void Parser::recovery() {
   error(error_msg.c_str());
 }
 
+void Parser::recovery(const char* message) { error(message); }
+
 void Parser::move_token() {
   if (index == token_stack_.size() - 1) {
     do {
       token_look_ = lexer_.tokenize();
-    } while (token_look_.tag() == Tag::COMMENT);
+    } while (token_look_.get_tag() == Tag::COMMENT);
     token_stack_.push_back(token_look_);
     index++;
   } else {
@@ -648,18 +652,24 @@ void Parser::move_token() {
     id尾部，可能为函数调用或者是变量定义
     <idtail>-><varrdef> <deflist> | LPAREN <para> RPAREN <funtail>
 */
-Var Parser::idtail(const TypeExpr& t_expr, std::string name) {
+Var Parser::idtail(TypeExpr* t_expr, std::string name) {
   Var var;
-  if (match(Tag::LPAREN)) {
+  if (match(Tag::LPAREN)) { // 解析到一个函数
     std::vector<Var> params;
     para(&params);
     if (!(FIRST(Tag::RPAREN))) {
       recovery();
     }
     move_token();
-    funtail(t_expr, name, params);
+    funtail(*t_expr, name, params);
   } else {
-    Var result = Var::create_id(name, t_expr);
+    TypeExpr* array = decl_array(t_expr->type);
+    Var result;
+    if (array != nullptr) {
+      result = Var::create_id(name, *array);
+    } else {
+      result = Var::create_id(name, *t_expr);
+    }
     var = varrdef(result);
     move_token();
     deflist();
@@ -706,7 +716,8 @@ Var Parser::idexpr(std::string name) {
       // 从右往左压参数，可以支持不定长参数，所以不需要传参数个数
       std::cout << "function call occur : " << name << "()" << std::endl;
       Address addr_result = Address();
-      if (fun.return_type.type != Type::VOID && fun.return_type.type != Type::UNKNOWN) {
+      if (fun.return_type.type != Type::VOID &&
+          fun.return_type.type != Type::UNKNOWN) {
         var = current_function_->gen_temp_var(fun.return_type);
         addr_result = var_to_address(var);
       }
@@ -774,4 +785,32 @@ instr_number Parser::next_instr() {
 
 void Parser::expect(Tag tag) {
   if (!match(tag)) recovery();
+}
+
+TypeExpr* Parser::decl_array(Type type) {
+  TypeExpr* result = nullptr;
+  if (!match(Tag::LBRACKET)) {
+    return nullptr;
+  }
+  if (token_look_.get_tag() != Tag::LT_NUMBER) {
+    recovery();
+    return nullptr;
+  }
+  unsigned int size = std::stoi(token_look_.get_name());
+  if (size == 0) {
+    recovery("array element size must greater than 0");
+    return nullptr;
+  }
+  move_token();
+  expect(Tag::RBRACKET);
+  result = new TypeExpr();
+  result->size = size;
+  result->type = type;
+  result->next = decl_array(type);
+  if (result->next!=nullptr) {
+  result->width = size * result->next->width;
+  } else {
+    result->width = size * get_type_size(result->type);
+  }
+  return result;
 }

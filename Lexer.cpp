@@ -16,7 +16,7 @@ void Lexer::scan(const char* file_name) {
   token_string_ = "";
   do {
     tokenize();
-  } while (pcurrent_token_->tag() != Tag::END_OF_FILE);
+  } while (pcurrent_token_->get_tag() != Tag::END_OF_FILE);
 }
 
 void Lexer::reset() {

@@ -132,5 +132,8 @@
     <Text Include="for_test.txt">
       <Filter>资源文件</Filter>
     </Text>
+    <Text Include="array_test.txt">
+      <Filter>资源文件</Filter>
+    </Text>
   </ItemGroup>
 </Project>

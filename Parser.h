@@ -44,7 +44,7 @@ class Parser {
       变量、函数的声明或定义
       <def>->ID <idtail>
   */
-  void def(const TypeExpr& t_expr);
+  void def(TypeExpr& t_expr);
 
   /*
       <idtail>-><varrdef> <deflist> | LPAREN <para> RPAREN <funtail>
@@ -68,7 +68,7 @@ class Parser {
   /*
       <defdata>->ID <varrdef>
   */
-  void defdata(const TypeExpr& t_expr);
+  void defdata(TypeExpr& t_expr);
 
   /*
       <paradata>->MUL ID | ID <paradatatail>
@@ -175,6 +175,8 @@ class Parser {
   */
   void recovery();
 
+  void recovery(const char* message);
+
   /*
       向前移动解析一个token
   */
@@ -182,7 +184,7 @@ class Parser {
 
   void funtail(const TypeExpr& t_expr, std::string, const std::vector<Var>& params);
 
-  Var idtail(const TypeExpr& t_expr, std::string);
+  Var idtail(TypeExpr* t_expr, std::string);
 
   Var idexpr(std::string);
 
@@ -235,6 +237,8 @@ class Parser {
   instr_number next_instr();
 
   void expect(Tag tag);
+
+  TypeExpr* decl_array(Type type);
 
  private:
   Token& token_look_ = Token::unknown_token;
