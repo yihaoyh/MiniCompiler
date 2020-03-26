@@ -545,7 +545,7 @@ unsigned int Parser::para_transit() {
 // 对应代码 10 * a
 Var Parser::item() {
   Var var = factor();
-  move_token();
+  //move_token();
   var = itemtail(var);
   return var;
 }
@@ -614,12 +614,13 @@ Var Parser::elem() {
 Var Parser::literal() {
   if (FIRST(Tag::LT_NUMBER) OR(Tag::LT_CHAR) OR(Tag::LT_STRING)) {
     Type type = tag_to_type(token_look_.get_tag());
-
     if (type == Type::UNKNOWN) {
       error("can not parse the type of literal:");
       recovery();
     } else {
+        // TODO 后面会支持更多类型
       Var var = Var::create_number(token_look_.get_name());
+        move_token();
       return var;
     }
   } else {
@@ -706,14 +707,11 @@ Var Parser::idexpr(std::string name) {
   if (match(Tag::LPAREN)) {
     // 处理传参
     unsigned int param_length = para_transit();
-    if (FIRST(Tag::RPAREN) == false) {
-      recovery();
-    }
-
+    expect(Tag::RPAREN);
     // 函数调用
     Function fun = get_function(name);
     if (!fun.name.empty()) {
-      // 从右往左压参数，可以支持不定长参数，所以不需要传参数个数
+      // 按照惯例，从右往左压参数
       std::cout << "function call occur : " << name << "()" << std::endl;
       Address addr_result = Address();
       if (fun.return_type.type != Type::VOID &&
@@ -724,17 +722,10 @@ Var Parser::idexpr(std::string name) {
       add_instruction(new InterInstruction(
           addr_result, Operator::OP_CALL, Address{LITERAL_STRING, name},
           Address{LITERAL_NUMBER, std::to_string(param_length)}));
-      // if (param_length > 0) {
-      //  add_instruction(new InterInstruction(Address(),
-      //  Operator::OP_POP_PARAM,
-      //                                       Address{LITERAL_NUMBER,
-      //                                       std::to_string(param_length)},
-      //                                       Address()));
-      //}
     }
   } else {
     var = current_function_->get_variable(name);
-    back_token();
+    //back_token();
   }
   return var;
 }
@@ -750,15 +741,6 @@ void Parser::put_variable(Var var) {
 instr_number Parser::add_instruction(InterInstruction* instrunction) {
   assert(current_function_ != nullptr);
   return current_function_->add_instruction(instrunction);
-}
-
-/*
- * 向后移动一个token
- */
-void Parser::back_token() {
-  if (index > 0) {
-    token_look_ = token_stack_[--index];
-  }
 }
 
 Function Parser::get_function(std::string name) {

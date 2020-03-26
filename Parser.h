@@ -8,8 +8,8 @@
 #include "Lexer.h"
 #include "Statement.h"
 #include "SymTable.h"
-#include "Var.h"
 #include "TypeExpr.h"
+#include "Var.h"
 
 /*
  * 语法分析器
@@ -182,7 +182,8 @@ class Parser {
   */
   void move_token();
 
-  void funtail(const TypeExpr& t_expr, std::string, const std::vector<Var>& params);
+  void funtail(const TypeExpr& t_expr, std::string,
+               const std::vector<Var>& params);
 
   Var idtail(TypeExpr* t_expr, std::string);
 
@@ -193,13 +194,8 @@ class Parser {
   instr_number add_instruction(InterInstruction* instrunction);
 
   /*
-      往后移动一个token
+    <operator>
   */
-  void back_token();
-
-  /*
-  <operator>
-*/
   void operator_();
 
   /*
