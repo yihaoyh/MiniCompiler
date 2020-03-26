@@ -9,6 +9,7 @@
 #include "Statement.h"
 #include "SymTable.h"
 #include "Var.h"
+#include "TypeExpr.h"
 
 /*
  * 语法分析器
@@ -35,15 +36,15 @@ class Parser {
   /*
       类型 <type>->KW_INT | KW_CHAR | KW_STRING | KW_VOID
   */
-  Type type();
+  TypeExpr type();
 
-  Type type_tail(Type type);
+  TypeExpr type_tail(TypeExpr& t_expr);
 
   /*
       变量、函数的声明或定义
       <def>->ID <idtail>
   */
-  void def(const Type& type);
+  void def(const TypeExpr& t_expr);
 
   /*
       <idtail>-><varrdef> <deflist> | LPAREN <para> RPAREN <funtail>
@@ -67,7 +68,7 @@ class Parser {
   /*
       <defdata>->ID <varrdef>
   */
-  void defdata(const Type& type);
+  void defdata(const TypeExpr& t_expr);
 
   /*
       <paradata>->MUL ID | ID <paradatatail>
@@ -179,9 +180,9 @@ class Parser {
   */
   void move_token();
 
-  void funtail(const Type& type, std::string, const std::vector<Var>& params);
+  void funtail(const TypeExpr& t_expr, std::string, const std::vector<Var>& params);
 
-  Var idtail(const Type&, std::string);
+  Var idtail(const TypeExpr& t_expr, std::string);
 
   Var idexpr(std::string);
 

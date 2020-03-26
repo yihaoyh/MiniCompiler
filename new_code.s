@@ -8,19 +8,15 @@ main:
 	subq $16, %rsp
 	movq $0 , %rbx
 	movq %rbx, -8(%rbp)
+	movq $0 , %rbx
+	movq %rbx, -8(%rbp)
 .L_main1:
 	movq -8(%rbp), %rbx
-	movq $5 , %rcx
+	movq $10 , %rcx
 	cmpq %rbx, %rcx
 	jg .L_main0
 	jmp .end_main
-.L_main0:
-	movq -8(%rbp), %rbx
-	pushq %rbx
-	movl %ebx, %esi
-	leaq .LC0(%rip), %rdi
-	movq $0, %rax
-	call printf@PLT
+.L_main2:
 	movq -8(%rbp), %rbx
 	movq $1 , %rcx
 	addq %rcx, %rbx
@@ -28,6 +24,14 @@ main:
 	movq -16(%rbp), %rbx
 	movq %rbx, -8(%rbp)
 	jmp .L_main1
+.L_main0:
+	movq -8(%rbp), %rbx
+	pushq %rbx
+	movl %ebx, %esi
+	leaq .LC0(%rip), %rdi
+	movq $0, %rax
+	call printf@PLT
+	jmp .L_main2
 .end_main:
 	subq %rsp, %rbp
 	addq %rbp, %rsp

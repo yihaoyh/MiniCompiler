@@ -29,7 +29,7 @@ Parser::Parser() {
   current_function_ = nullptr;
   index = -1;
   // 预添加print函数
-  Function fun = Function("print", false, Type::VOID, std::vector<Var>());
+  Function fun = Function("print", false, base_type(Type::VOID), std::vector<Var>());
   function_table_["print"] = fun;
 }
 void Parser::begin_parse(const std::string& file_name) {
@@ -110,22 +110,23 @@ void Parser::program() {
 }
 
 void Parser::segment() {
-  Type t = type();
+  TypeExpr t_expr = type();
   move_token();
-  def(t);
+  def(t_expr);
 }
 
-Type Parser::type() {
+TypeExpr Parser::type() {
   if (TYPE_FIRST) {
-    return tag_to_type(token_look_.tag());
+    TypeExpr expr = base_type(tag_to_type(token_look_.tag()));
+    return type_tail(expr);
   } else {
     recovery();
-    return Type::UNKNOWN;
+    return UNKNOWN_TYPE_EXPR;
   }
 }
-Type Parser::type_tail(Type type) { return Type(); }
+TypeExpr Parser::type_tail(TypeExpr& t_expr) { return t_expr; }
 // <def>->ID <idtail> 代码形式如 " a = a + b"
-void Parser::def(const Type& type) {
+void Parser::def(const TypeExpr& t_expr) {
   std::string name = "";
   if (FIRST(Tag::IDENTIFIER)) {
     name = token_look_.get_name();
@@ -133,7 +134,7 @@ void Parser::def(const Type& type) {
   } else {
     recovery();
   }
-  Var var = idtail(type, name);
+  Var var = idtail(t_expr, name);
 }
 
 Var Parser::varrdef(Var result) { return init(result); }
@@ -170,14 +171,11 @@ void Parser::deflist() {
 }
 
 // <defdata>->ID <varrdef> 对应代码"a = 10 * b"
-void Parser::defdata(const Type& type) {
+void Parser::defdata(const TypeExpr& t_expr) {
   if (FIRST(Tag::IDENTIFIER)) {
     std::string name = token_look_.get_name();
     move_token();
-    Var result;
-    result.tag = Tag::IDENTIFIER;
-    result.name = name;
-    result.type = type;
+    Var result = Var::create_id(name, t_expr);
     put_variable(result);
     Var arg1 = varrdef(result);
   }
@@ -190,7 +188,7 @@ void Parser::paradata(std::vector<Var>* params) {
     if (FIRST(Tag::IDENTIFIER)) {
       std::cout << "para name " << token_look_.get_name() << std::endl;
       // 将参数类型添加到函数
-      params->push_back(Var::create_id(token_look_.get_name(), type));
+      params->push_back(Var::create_id(token_look_.get_name(), base_type(type)));
       move_token();
     }
   }
@@ -436,9 +434,9 @@ BoolExpr Parser::compare_tail(const Var& lval, BoolExpr* expr) {
 
 // <localdef>-><type> <defdata> <deflist>
 void Parser::localdef() {
-  Type t = type();
+  TypeExpr t_expr = type();
   move_token();
-  defdata(t);
+  defdata(t_expr);
   // move_token();
   deflist();
   if (FIRST(Tag::SEMICOLON)) {
@@ -511,7 +509,7 @@ Var Parser::alo_tail(const Var& arg1) {
     Operator op = op_low();
     move_token();
     Var arg2 = item();
-    Var temp = current_function_->gen_temp_var(arg1.type);
+    Var temp = current_function_->gen_temp_var(arg1.type_expr);
     add_instruction(new InterInstruction(
         var_to_address(temp), op, var_to_address(arg1), var_to_address(arg2)));
     return alo_tail(temp);
@@ -539,7 +537,7 @@ unsigned int Parser::para_transit() {
   }
   add_instruction(new InterInstruction(Address(), Operator::OP_PUSH_PARAM,
                                        var_to_address(var), Address()));
-  length += get_type_size(var.type);
+  length += get_type_size(var.type_expr.type);
   return length;
 }
 // 对应代码 10 * a
@@ -560,7 +558,7 @@ Var Parser::itemtail(const Var& arg1) {
     Operator op = op_high();
     move_token();
     Var arg2 = factor();
-    Var result = current_function_->gen_temp_var(arg1.type);
+    Var result = current_function_->gen_temp_var(arg1.type_expr);
     add_instruction(new InterInstruction(var_to_address(result), op,
                                          var_to_address(arg1),
                                          var_to_address(arg2)));
@@ -650,7 +648,7 @@ void Parser::move_token() {
     id尾部，可能为函数调用或者是变量定义
     <idtail>-><varrdef> <deflist> | LPAREN <para> RPAREN <funtail>
 */
-Var Parser::idtail(const Type& type, std::string name) {
+Var Parser::idtail(const TypeExpr& t_expr, std::string name) {
   Var var;
   if (match(Tag::LPAREN)) {
     std::vector<Var> params;
@@ -659,9 +657,9 @@ Var Parser::idtail(const Type& type, std::string name) {
       recovery();
     }
     move_token();
-    funtail(type, name, params);
+    funtail(t_expr, name, params);
   } else {
-    Var result = Var::create_id(name, type);
+    Var result = Var::create_id(name, t_expr);
     var = varrdef(result);
     move_token();
     deflist();
@@ -670,16 +668,16 @@ Var Parser::idtail(const Type& type, std::string name) {
   return var;
 }
 
-void Parser::funtail(const Type& type, std::string fun_name,
+void Parser::funtail(const TypeExpr& t_expr, std::string fun_name,
                      const std::vector<Var>& params) {
   if (FIRST(Tag::SEMICOLON)) {
     std::cout << "function declaration occur name:" << fun_name << std::endl;
-    Function func = Function(fun_name, true, type, std::vector<Var>());
+    Function func = Function(fun_name, true, t_expr, std::vector<Var>());
     functions_.push_back(func);
     put_function(func);
   } else if (FIRST(Tag::LBRACES)) {
     std::cout << "function definition occur name:" << fun_name << std::endl;
-    Function func = Function(fun_name, false, type, params);
+    Function func = Function(fun_name, false, t_expr, params);
     functions_.push_back(func);
     put_function(func);
     current_function_ = &functions_.back();
@@ -708,7 +706,7 @@ Var Parser::idexpr(std::string name) {
       // 从右往左压参数，可以支持不定长参数，所以不需要传参数个数
       std::cout << "function call occur : " << name << "()" << std::endl;
       Address addr_result = Address();
-      if (fun.return_type != Type::VOID && fun.return_type != Type::UNKNOWN) {
+      if (fun.return_type.type != Type::VOID && fun.return_type.type != Type::UNKNOWN) {
         var = current_function_->gen_temp_var(fun.return_type);
         addr_result = var_to_address(var);
       }

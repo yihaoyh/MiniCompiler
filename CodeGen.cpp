@@ -30,7 +30,7 @@ std::string CodeGen::parse_function(const Function& fun) {
   std::string code = "";
   std::vector<Var> var_list = fun.get_variable_list();
   for (auto iter = var_list.begin(); iter != var_list.end(); ++iter) {
-    curr_frame_.add_local(iter->name, get_type_size(iter->type));
+    curr_frame_.add_local(iter->name, get_type_size(iter->type_expr.type));
   }
 
   code += gen_header(curr_frame_.fun_name);
@@ -112,7 +112,7 @@ std::string CodeGen::gen_assign(const Var& lval, const Var& rval) {
     code += gen_save_variable(RBX, offset);
   } else {
     code += gen_create_variable(RBX);
-    curr_frame_.add_local(lval.name, get_type_size(lval.type));
+    curr_frame_.add_local(lval.name, get_type_size(lval.type_expr.type));
   }
   return code;
 }
@@ -163,7 +163,7 @@ std::string CodeGen::gen_low_op(Operator op, const Var& result, const Var& lval,
     code += gen_save_variable(RBX, offset);
   } else {
     code += gen_create_variable(RBX);
-    curr_frame_.add_local(result.name, get_type_size(result.type));
+    curr_frame_.add_local(result.name, get_type_size(result.type_expr.type));
   }
   return code;
 }
@@ -274,7 +274,7 @@ std::string CodeGen::gen_set_param(const Var& param) {
   std::string code = "";
   code += gen_access_arg(param, RBX);
   code += "\tpushq %rbx\n";
-  curr_frame_.add_param_out(get_type_size(param.type));
+  curr_frame_.add_param_out(get_type_size(param.type_expr.type));
   return code;
 }
 
@@ -446,11 +446,11 @@ Var CodeGen::get_var(const Address& address) {
     case TEMP_VAR:
       return function_->get_variable(address.value);
     case LITERAL_NUMBER:
-      return Var(Tag::LT_NUMBER, "", address.value, Type::INT);
+      return Var(Tag::LT_NUMBER, "", address.value, base_type(Type::INT));
     case LITERAL_CHAR:
-      return Var(Tag::LT_CHAR, "", address.value, Type::CHAR);
+      return Var(Tag::LT_CHAR, "", address.value,  base_type(Type::CHAR));
     case LITERAL_STRING:
-      return Var(Tag::LT_STRING, "", address.value, Type::STRING);
+      return Var(Tag::LT_STRING, "", address.value,  base_type(Type::STRING));
     default:
       return Var();
   }
@@ -496,7 +496,7 @@ void CodeGen::parse_params() {
   for (unsigned int i = 0; i < params.size(); i++) {
     Var var = params[i];
     curr_frame_.add_param_in(var.name, offset);
-    int length = get_type_size(var.type);
+    int length = get_type_size(var.type_expr.type);
     offset += length;
   }
 }

@@ -7,7 +7,7 @@
 #include "Var.h"
 class Function {
  public:
-  Function(const std::string& fun_name, bool is_declaration, const Type& type,
+  Function(const std::string& fun_name, bool is_declaration, const TypeExpr& t_epxr,
            const std::vector<Var>& params);
   Function();
   unsigned int add_instruction(InterInstruction* inst);
@@ -19,12 +19,12 @@ class Function {
   void put_variable(const Var& var);
   const Var get_variable(const std::string& name) const;
   const std::vector<Var> get_variable_list() const;
-  Var gen_temp_var(const Type type);
+  Var gen_temp_var(const TypeExpr t_expr);
   std::string gen_label();
 
   bool is_declaration;  // true表示声明，false表示定义
   std::string name;     // 函数名称
-  Type return_type = Type::UNKNOWN;
+  TypeExpr return_type = UNKNOWN_TYPE_EXPR;
 
  private:
   SymTable sym_table_;

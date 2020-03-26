@@ -1,10 +1,10 @@
 ﻿#include "Function.h"
 
 Function::Function(const std::string& fun_name, bool is_declaration,
-                   const Type& type, const std::vector<Var>& params)
+                   const TypeExpr& t_expr, const std::vector<Var>& params)
     : name{fun_name},
       is_declaration{is_declaration},
-      return_type{type},
+      return_type{t_expr},
       params_{params} {
   for (auto iter = params.begin(); iter != params.end(); ++iter) {
     sym_table_.put_variable(*iter);
@@ -12,7 +12,6 @@ Function::Function(const std::string& fun_name, bool is_declaration,
 }
 
 Function::Function() : name{""}, is_declaration{"false"} {
-  return_type = Type::UNKNOWN;
 }
 
 /*
@@ -50,8 +49,8 @@ const std::vector<Var> Function::get_variable_list() const {
   return sym_table_.get_variable_list();
 }
 
-Var Function::gen_temp_var(const Type type) {
-  Var var = sym_table_.gen_temp_var(type);
+Var Function::gen_temp_var(const TypeExpr t_expr) {
+  Var var = sym_table_.gen_temp_var(t_expr);
   put_variable(var);
   return var;
 }

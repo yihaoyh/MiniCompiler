@@ -4,10 +4,8 @@
 #include <vector>
 
 #include "Var.h"
-//#include"Function.h"
 #include "InterInstruction.h"
-
-// class Function;
+#include "TypeExpr.h"
 
 class SymTable {
  public:
@@ -15,7 +13,7 @@ class SymTable {
   Var get_variable(std::string);
   Var get_const_variable(std::string) const;
   unsigned int get_next_instruction();
-  Var gen_temp_var(Type type);  // 生成临时变量
+  Var gen_temp_var(const TypeExpr& t_expr);  // 生成临时变量
   const std::vector<Var> get_variable_list() const;
  private:
   std::map<std::string, Var> var_table_;      // 变量表

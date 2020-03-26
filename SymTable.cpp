@@ -19,11 +19,11 @@ Var SymTable::get_const_variable(std::string name) const {
 
 unsigned int SymTable::get_next_instruction() { return inst_vector.size(); }
 
-Var SymTable::gen_temp_var(Type type) {
+Var SymTable::gen_temp_var(const TypeExpr& t_expr) {
   std::stringstream sstream;
   sstream << "temp_" << temp_var_table.size();
   std::string name = std::string(sstream.str());
-  Var var = Var::create_id(name, type);
+  Var var = Var::create_id(name, t_expr);
   temp_var_table[name] = var;
   return var;
 }
