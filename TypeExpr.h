@@ -8,7 +8,6 @@
     t1 = j * 4;
     t2 = t0 + t1;
     t3 = a offset t2
-
 */
 struct TypeExpr_ {
   TypeExpr_();

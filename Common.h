@@ -26,7 +26,7 @@ enum class Operator {
   OP_NOT_EQUAL,      // !=
   OP_GREATER,        // >
   OP_GREATER_EQUAL,  // >=
-  OP_OFFSET          // 数组偏移
+  OP_ARRAY          // 数组偏移
 };
 
 void print_error(const char* message);

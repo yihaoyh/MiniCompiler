@@ -22,10 +22,12 @@ Var::Var() {
 Var::Var(Tag t, std::string name, std::string value, const TypeExpr& t_expr)
     : tag{t}, name{name}, value_string{value}, type_expr{t_expr} {}
 
+// TODO 补齐其他五大函数
 Var& Var::operator=(const Var& ref) {
   tag = ref.tag;
   type_expr = ref.type_expr;
   name = ref.name;
   value_string = ref.value_string;
+  is_pointer = ref.is_pointer;
   return *this;
 }

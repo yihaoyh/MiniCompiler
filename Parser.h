@@ -236,6 +236,9 @@ class Parser {
 
   TypeExpr* decl_array(Type type);
 
+  //Var access_array(TypeExpr* t_expr, const Var* prev);
+  Var access_array(const TypeExpr& t_expr);
+  Var acc_array_tail(const TypeExpr* t_expr,  Var* prev);
  private:
   Token& token_look_ = Token::unknown_token;
   Lexer lexer_;

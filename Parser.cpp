@@ -159,7 +159,7 @@ Var Parser::init(Var result) {
     add_instruction(&InterInstruction(var_to_address(result),
                                       Operator::OP_ASSIGN, var_to_address(var),
                                       Address()));
-  } 
+  }
   return var;
 }
 
@@ -545,7 +545,7 @@ unsigned int Parser::para_transit() {
 // 对应代码 10 * a
 Var Parser::item() {
   Var var = factor();
-  //move_token();
+  // move_token();
   var = itemtail(var);
   return var;
 }
@@ -618,9 +618,9 @@ Var Parser::literal() {
       error("can not parse the type of literal:");
       recovery();
     } else {
-        // TODO 后面会支持更多类型
+      // TODO 后面会支持更多类型
       Var var = Var::create_number(token_look_.get_name());
-        move_token();
+      move_token();
       return var;
     }
   } else {
@@ -655,7 +655,7 @@ void Parser::move_token() {
 */
 Var Parser::idtail(TypeExpr* t_expr, std::string name) {
   Var var;
-  if (match(Tag::LPAREN)) { // 解析到一个函数
+  if (match(Tag::LPAREN)) {  // 解析到一个函数
     std::vector<Var> params;
     para(&params);
     if (!(FIRST(Tag::RPAREN))) {
@@ -725,7 +725,12 @@ Var Parser::idexpr(std::string name) {
     }
   } else {
     var = current_function_->get_variable(name);
-    //back_token();
+    if (var.type_expr.size != 0) {
+      Var offset = access_array(var.type_expr);
+      Var temp = current_function_->gen_temp_pointer(base_type(Type::INT));
+      add_instruction(new InterInstruction(var_to_address(temp), Operator::OP_ARRAY, var_to_address(var), var_to_address(offset)));
+      return temp;
+    }
   }
   return var;
 }
@@ -789,10 +794,65 @@ TypeExpr* Parser::decl_array(Type type) {
   result->size = size;
   result->type = type;
   result->next = decl_array(type);
-  if (result->next!=nullptr) {
-  result->width = size * result->next->width;
+  if (result->next != nullptr) {
+    result->width = result->next->size * result->next->width;
   } else {
-    result->width = size * get_type_size(result->type);
+    result->width = get_type_size(result->type);
   }
   return result;
 }
+
+Var Parser::access_array(const TypeExpr& t_expr) {
+  expect(Tag::LBRACKET);
+  Var var = expr();
+  Var temp = current_function_->gen_temp_var(base_type(t_expr.type));
+  add_instruction(&InterInstruction(
+      var_to_address(temp), Operator::OP_MUL, var_to_address(var),
+      var_to_address(Var::create_number(std::to_string(t_expr.width)))));
+  expect(Tag::RBRACKET);
+  return acc_array_tail(t_expr.next, &temp);
+}
+
+Var Parser::acc_array_tail(const TypeExpr* t_expr, Var* prev) {
+  if (t_expr == nullptr) {
+    return *prev;
+  }
+  expect(Tag::LBRACKET);
+  Var var = expr();
+  Var temp1 = current_function_->gen_temp_var(base_type(t_expr->type));
+  add_instruction(&InterInstruction(
+      var_to_address(temp1), Operator::OP_MUL, var_to_address(var),
+      var_to_address(Var::create_number(std::to_string(t_expr->width)))));
+  expect(Tag::RBRACKET);
+
+  Var temp2 = current_function_->gen_temp_var(base_type(t_expr->type));
+  add_instruction(&InterInstruction(var_to_address(temp2), Operator::OP_ADD,
+                                    var_to_address(*prev),
+                                    var_to_address(temp1)));
+
+  return acc_array_tail(t_expr->next, &temp2);
+}
+
+// Var Parser::access_array(TypeExpr* t_expr, const Var* prev) {
+//  Var temp1;
+//  expect(Tag::LBRACKET);
+//  Var var = expr();
+//  Var temp = current_function_->gen_temp_var(base_type(t_expr->type));
+//  add_instruction(&InterInstruction(
+//      var_to_address(temp), Operator::OP_MUL, var_to_address(var),
+//      var_to_address(Var::create_number(std::to_string(t_expr->width)))));
+//  expect(Tag::RBRACKET);
+//
+//  if (prev != nullptr) {
+//    // Var
+//    temp1 = current_function_->gen_temp_var(base_type(t_expr->type));
+//    add_instruction(&InterInstruction(var_to_address(temp1), Operator::OP_ADD,
+//                                      var_to_address(temp),
+//                                      var_to_address(*prev)));
+//  }
+//  if (t_expr->next == nullptr) {
+//    return temp1;
+//  } else {
+//    return access_array(t_expr->next, &temp1);
+//  }
+//}

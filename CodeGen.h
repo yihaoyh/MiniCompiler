@@ -36,10 +36,13 @@ class CodeGen {
   std::string gen_assign(const Var& lval, const Var& rval);
   std::string gen_low_op(Operator op, const Var& result, const Var& lval,
                          const Var& rval);
+  std::string gen_high_op(Operator op, const Var& result, const Var& lval,
+                         const Var& rval);
   std::string gen_enter_proc();
   std::string gen_exit_proc();
   std::string gen_return(const Var& result);
   std::string gen_load_variable(const std::string& reg_name, int offset);
+  std::string gen_load_pointer(const std::string& reg_name, int offset);
   std::string gen_create_variable(const std::string& reg_name);
   std::string gen_save_variable(const std::string& reg_name, int offset);
   std::string gen_call(const Var& result, const std::string& fun_name, unsigned int param_length);
@@ -52,6 +55,8 @@ class CodeGen {
   std::string gen_jump(const Var& result);
   std::string gen_normal(Operator op, const Var& result, const Var& lval,
                                 const Var& rval);
+  std::string gen_offset(const Var& result, const Var& arg1,
+                         const Var& arg2);
 
   bool register_check(const std::string& reg_name);
   bool frame_offset_check(const std::string& var_name, int offset);

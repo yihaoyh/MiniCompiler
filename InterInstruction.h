@@ -8,14 +8,17 @@
 /*
  * 表示三地址码的地址
  */
+// TODO 定义和Type重复了
 constexpr auto EMPTY = -1;
 constexpr auto NAME = 0;
 constexpr auto TEMP_VAR = 1;
 constexpr auto LITERAL_NUMBER = 2;
 constexpr auto LITERAL_CHAR = 3;
 constexpr auto LITERAL_STRING = 4;
+constexpr auto POINTER = 5;
 
 struct Address_ {
+   // TODO 缺少数据类型
   int type = -1;
   /*
    值的字符串形式，type为NAME时为名字，为字面量时需要从字符串进行转换。

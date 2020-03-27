@@ -40,19 +40,19 @@ InterInstruction InterInstruction::gen_if_false_jump(Operator op, Address arg1,
 }
 
 InterInstruction InterInstruction::gen_jump() {
-  return InterInstruction(Inst_Type::JUMP, Address::label_addr(0), Operator::OP_JUMP,
-                          Address(), Address());
+  return InterInstruction(Inst_Type::JUMP, Address::label_addr(0),
+                          Operator::OP_JUMP, Address(), Address());
 }
 
 InterInstruction InterInstruction::gen_jump(instr_number number) {
-  return InterInstruction(Inst_Type::JUMP, Address::label_addr(number), Operator::OP_JUMP,
-                          Address(), Address());
+  return InterInstruction(Inst_Type::JUMP, Address::label_addr(number),
+                          Operator::OP_JUMP, Address(), Address());
 }
 
 std::string InterInstruction::to_string() {
   std::stringstream ss;
   ss << InterInstruction::type_to_string(type) << " ";
-  if (result.type == NAME) {
+  if (result.type == NAME || result.type == POINTER) {
     ss << result.value << " = ";
   }
   if (arg1.type != EMPTY) {
@@ -85,6 +85,9 @@ std::string InterInstruction::to_string() {
     case Operator::OP_RETURN:
       ss << " return ";
       break;
+    case Operator::OP_ARRAY:
+      ss << " array ";
+      break;
     default:
       ss << " unknown op";
       break;
@@ -97,13 +100,17 @@ std::string InterInstruction::to_string() {
 
 Address var_to_address(const Var& var) {
   if (var.tag == Tag::IDENTIFIER) {
-    return Address{NAME, var.name};
+    if (!var.is_pointer) {
+      return Address{NAME, var.name};
+    } else {
+      return Address{POINTER, var.name};
+    }
   } else if (var.tag == Tag::LT_NUMBER) {
     return Address{LITERAL_NUMBER, var.value_string};
   }
   return Address{EMPTY, ""};
 }
 
-Address_ Address_::label_addr(instr_number number) { 
-    return Address{LITERAL_STRING, std::to_string(number)};
+Address_ Address_::label_addr(instr_number number) {
+  return Address{LITERAL_STRING, std::to_string(number)};
 }

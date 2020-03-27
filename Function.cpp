@@ -55,6 +55,13 @@ Var Function::gen_temp_var(const TypeExpr t_expr) {
   return var;
 }
 
+Var Function::gen_temp_pointer(const TypeExpr t_expr) {
+  Var var = sym_table_.gen_temp_var(t_expr);
+  var.is_pointer = true;
+  put_variable(var);
+  return var;
+}
+
 std::string Function::gen_label() {
   std::stringstream sstream;
   sstream << ".L_" << name << label_index_++;

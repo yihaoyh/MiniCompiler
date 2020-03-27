@@ -20,6 +20,7 @@ class Function {
   const Var get_variable(const std::string& name) const;
   const std::vector<Var> get_variable_list() const;
   Var gen_temp_var(const TypeExpr t_expr);
+  Var gen_temp_pointer(const TypeExpr type);
   std::string gen_label();
 
   bool is_declaration;  // true表示声明，false表示定义

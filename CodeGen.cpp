@@ -30,7 +30,13 @@ std::string CodeGen::parse_function(const Function& fun) {
   std::string code = "";
   std::vector<Var> var_list = fun.get_variable_list();
   for (auto iter = var_list.begin(); iter != var_list.end(); ++iter) {
-    curr_frame_.add_local(iter->name, get_type_size(iter->type_expr.type));
+    unsigned int offset = 0;
+    if (iter->type_expr.size > 0) {
+      offset = iter->type_expr.size * iter->type_expr.width;
+    } else {
+      offset = get_type_size(iter->type_expr.type);
+    }
+    curr_frame_.add_local(iter->name, offset);
   }
 
   code += gen_header(curr_frame_.fun_name);
@@ -105,11 +111,18 @@ std::string CodeGen::gen_assign(const Var& lval, const Var& rval) {
   }
   code += gen_access_arg(rval, RBX);
   if (curr_frame_.is_variable_exists(lval.name)) {
-    int offset = curr_frame_.get_variable_offset(lval.name);
-    if (!frame_offset_check(lval.name, offset)) {
-      return "";
+    if (lval.is_pointer) {
+      int offset = curr_frame_.get_variable_offset(lval.name);
+      code += gen_load_variable(RCX, offset);
+      code += "\tmovq " + RBX + ", (" + RCX + ")\n";
+    } else {
+      int offset = curr_frame_.get_variable_offset(lval.name);
+      if (!frame_offset_check(lval.name, offset)) {
+        return "";
+      }
+      code += gen_save_variable(RBX, offset);
     }
-    code += gen_save_variable(RBX, offset);
+
   } else {
     code += gen_create_variable(RBX);
     curr_frame_.add_local(lval.name, get_type_size(lval.type_expr.type));
@@ -168,6 +181,44 @@ std::string CodeGen::gen_low_op(Operator op, const Var& result, const Var& lval,
   return code;
 }
 
+std::string CodeGen::gen_high_op(Operator op, const Var& result,
+                                 const Var& lval, const Var& rval) {
+  std::string code = "";
+  std::string str_lval = "";
+  std::string str_rval = "";
+  std::string str_op;
+  if (!(op == Operator::OP_MUL || op == Operator::OP_DIV)) {
+    error("invalid operator");
+    return "";
+  }
+  if (result.tag != Tag::IDENTIFIER) {
+    error("result must be identifier");
+    return "";
+  }
+  code += gen_access_arg(lval, RAX);
+  code += gen_access_arg(rval, RBX);
+  if (op == Operator::OP_MUL) {
+    str_op = "\tmulq";
+  } else {
+    str_op = "\tdivq";
+  }
+  code += str_op + " %rbx\n";
+  if (curr_frame_.is_variable_exists(result.name)) {
+    int offset = curr_frame_.get_variable_offset(result.name);
+    if (offset == 0) {
+      std::stringstream sstream;
+      sstream << "var " << result.name << " offset is 0";
+      print_error(sstream.str().c_str());
+      return "";
+    }
+    code += gen_save_variable(RAX, offset);
+  } else {
+    code += gen_create_variable(RAX);
+    curr_frame_.add_local(result.name, get_type_size(result.type_expr.type));
+  }
+  return code;
+}
+
 /*
     生成进入过程时的代码
 */
@@ -220,6 +271,19 @@ std::string CodeGen::gen_load_variable(const std::string& reg_name,
   return sstream.str();
 }
 
+std::string CodeGen::gen_load_pointer(const std::string& reg_name, int offset) {
+  if (!register_check(reg_name)) {
+    return "";
+  }
+  if (!frame_offset_check(reg_name, offset)) {
+    return "";
+  }
+  std::stringstream sstream;
+  sstream << "\tmovq " << offset << "(%rbp), " << reg_name << "\n";
+  sstream << "\tmovq (" << reg_name << "), " << reg_name << "\n";
+  return sstream.str();
+}
+
 /*
  * 生成一条创建变量的汇编指令，实现方式是将变量压栈，类似 pushq %rbx
  */
@@ -262,6 +326,20 @@ std::string CodeGen::gen_call(const Var& result, const std::string& fun_name,
     sstream << gen_save_variable(RAX, offset);
   }
   return sstream.str();
+}
+
+// 读取偏移
+std::string CodeGen::gen_offset(const Var& result, const Var& arg1,
+                                const Var& arg2) {
+  // $offset_arg1(%rbp, %rbx);
+  std::string code = "";
+  code += gen_access_arg(arg2, RBX);
+  int offset_arg1 = curr_frame_.get_variable_offset(arg1.name);
+  code += "\tleaq " + std::to_string(offset_arg1) + "(%rbp, %rbx), %rbx\n";
+  // code += gen_load_variable(RBX, offset_arg1);
+  int offset_result = curr_frame_.get_variable_offset(result.name);
+  code += gen_save_variable(RBX, offset_result);
+  return code;
 }
 
 std::string CodeGen::gen_set_param(const Var& param) {
@@ -409,6 +487,19 @@ std::string CodeGen::gen_normal(Operator op, const Var& result, const Var& arg1,
         error("arg2 must be number or id in add/sub");
       }
       return gen_low_op(op, result, arg1, arg2);
+    case Operator::OP_MUL:
+    case Operator::OP_DIV:
+      if (result.tag != Tag::IDENTIFIER) {
+        error("result must be lvalue in add/sub");
+        return "";
+      }
+      if (arg1.tag != Tag::IDENTIFIER && arg1.tag != Tag::LT_NUMBER) {
+        error("arg1 must be number or id in add/sub");
+      }
+      if (arg2.tag != Tag::IDENTIFIER && arg2.tag != Tag::LT_NUMBER) {
+        error("arg2 must be number or id in add/sub");
+      }
+      return gen_high_op(op, result, arg1, arg2);
     case Operator::OP_ASSIGN:
       if (result.tag != Tag::IDENTIFIER) {
         error("result must be lvalue in add/sub");
@@ -421,6 +512,8 @@ std::string CodeGen::gen_normal(Operator op, const Var& result, const Var& arg1,
       return gen_call(result, arg1.value_string, std::stoi(arg2.value_string));
     // case Operator::OP_POP_PARAM:
     // return gen_pop_param(arg1);
+    case Operator::OP_ARRAY:
+      return gen_offset(result, arg1, arg2);
     case Operator::OP_RETURN:
       return gen_return(arg1);
     default:
@@ -448,9 +541,11 @@ Var CodeGen::get_var(const Address& address) {
     case LITERAL_NUMBER:
       return Var(Tag::LT_NUMBER, "", address.value, base_type(Type::INT));
     case LITERAL_CHAR:
-      return Var(Tag::LT_CHAR, "", address.value,  base_type(Type::CHAR));
+      return Var(Tag::LT_CHAR, "", address.value, base_type(Type::CHAR));
     case LITERAL_STRING:
-      return Var(Tag::LT_STRING, "", address.value,  base_type(Type::STRING));
+      return Var(Tag::LT_STRING, "", address.value, base_type(Type::STRING));
+    case POINTER:
+      return function_->get_variable(address.value);
     default:
       return Var();
   }
@@ -479,7 +574,11 @@ std::string CodeGen::gen_access_arg(const Var& var,
     if (!frame_offset_check(var.name, offset)) {
       return "";
     }
-    return gen_load_variable(reg_name, offset);
+    if (var.is_pointer) {
+      return gen_load_pointer(reg_name, offset);
+    } else {
+      return gen_load_variable(reg_name, offset);
+    }
   }
   return "";
 }
