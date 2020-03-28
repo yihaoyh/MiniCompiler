@@ -13,7 +13,8 @@ extern std::map<std::string, Tag> keyword_table;
 int main() {
   init_keyword_table();
   Parser parser;
-  parser.begin_parse("array_test.txt");
+  parser.begin_parse("fibonacci.txt");
+  //parser.begin_parse("array_test.txt");
   parser.post_parse();
   parser.print_instructions();
 }
