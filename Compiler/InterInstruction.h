@@ -7,18 +7,18 @@
 
 /*
  * 表示三地址码的地址
+ * 
  */
-// TODO 定义和Type重复了
-constexpr auto EMPTY = -1;
+// TODO 修改Address的结构，分为两大类  变量和常量    变量存放地址  常量存放值
+constexpr auto EMPTY = -1;  // EMPTY 可以改成UNDEFINE
 constexpr auto NAME = 0;
-constexpr auto TEMP_VAR = 1;
-constexpr auto LITERAL_NUMBER = 2;
-constexpr auto LITERAL_CHAR = 3;
-constexpr auto LITERAL_STRING = 4;
-constexpr auto POINTER = 5;
+constexpr auto LITERAL_NUMBER = 1;
+constexpr auto LITERAL_CHAR = 2;
+constexpr auto LITERAL_STRING = 3;
+constexpr auto POINTER = 4;
 
 struct Address_ {
-   // TODO 缺少数据类型
+  // TODO 缺少数据类型
   int type = -1;
   /*
    值的字符串形式，type为NAME时为名字，为字面量时需要从字符串进行转换。
@@ -52,13 +52,12 @@ class InterInstruction {
   Operator op;
   Address arg1;
   Address arg2;
-  // Call call;
   unsigned int index = 0;  // 指令序号
   std::string label;       // 指令标号
   std::vector<unsigned int> next_list;
   Inst_Type type;
   bool removed = false;
-  virtual ~InterInstruction(){}
+  virtual ~InterInstruction() {}
 };
 
 Address var_to_address(const Var& var);

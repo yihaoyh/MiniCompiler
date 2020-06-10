@@ -536,7 +536,6 @@ bool CodeGen::register_check(const std::string& reg_name) {
 Var CodeGen::get_var(const Address& address) {
   switch (address.type) {
     case NAME:
-    case TEMP_VAR:
       return function_->get_variable(address.value);
     case LITERAL_NUMBER:
       return Var(Tag::LT_NUMBER, "", address.value, base_type(Type::INT));
